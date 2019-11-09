@@ -144,6 +144,9 @@ public class CapacityResource implements CapacityApi {
         int sockets = 0;
         int physicalSockets = 0;
         int hypervisorSockets = 0;
+        int cores = 0;
+        int physicalCores = 0;
+        int hypervisorCores = 0;
 
         for (SubscriptionCapacity capacity : matches) {
             if (capacity.getBeginDate().isBefore(date) && capacity.getEndDate().isAfter(date)) {
@@ -155,6 +158,14 @@ public class CapacityResource implements CapacityApi {
                     sockets += capacity.getPhysicalSockets();
                     physicalSockets += capacity.getPhysicalSockets();
                 }
+                if (capacity.getPhysicalCores() != null) {
+                    cores += capacity.getPhysicalCores();
+                    physicalCores += capacity.getPhysicalCores();
+                }
+                if (capacity.getVirtualCores() != null) {
+                    cores += capacity.getVirtualCores();
+                    hypervisorCores += capacity.getVirtualCores();
+                }
             }
         }
 
@@ -163,6 +174,9 @@ public class CapacityResource implements CapacityApi {
             .sockets(sockets)
             .physicalSockets(physicalSockets)
             .hypervisorSockets(hypervisorSockets)
+            .cores(cores)
+            .physicalCores(physicalCores)
+            .hypervisorCores(hypervisorCores)
             .hasInfiniteQuantity(false);
     }
 
