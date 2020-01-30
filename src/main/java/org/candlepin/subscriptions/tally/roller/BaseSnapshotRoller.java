@@ -168,6 +168,7 @@ public abstract class BaseSnapshotRoller {
         changed |= updateTotals(overrideMaxCheck, snap, calc, HardwareMeasurementType.TOTAL);
         changed |= updateTotals(overrideMaxCheck, snap, calc, HardwareMeasurementType.PHYSICAL);
         changed |= updateTotals(overrideMaxCheck, snap, calc, HardwareMeasurementType.HYPERVISOR);
+        changed |= updateTotals(overrideMaxCheck, snap, calc, HardwareMeasurementType.AWS);
         return changed;
     }
 

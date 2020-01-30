@@ -459,6 +459,18 @@ components:
           type: integer
           format: int32
           minimum: 0
+        aws_instance_count:
+          type: integer
+          format: int32
+          minimum: 0
+        aws_cores:
+          type: integer
+          format: int32
+          minimum: 0
+        aws_sockets:
+          type: integer
+          format: int32
+          minimum: 0
         has_data:
           type: boolean
     CapacityReport:

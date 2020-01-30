@@ -41,6 +41,11 @@ public class ProductUsageCalculation {
     private int totalHypervisorCores;
     private int totalHypervisorInstanceCount;
 
+    // Cloud
+    private int totalCloudSockets;
+    private int totalCloudCores;
+    private int totalCloudInstanceCount;
+
     public ProductUsageCalculation(String productId) {
         this.productId = productId;
     }
@@ -85,6 +90,18 @@ public class ProductUsageCalculation {
         return totalHypervisorInstanceCount;
     }
 
+    public int getTotalCloudSockets() {
+        return totalCloudSockets;
+    }
+
+    public int getTotalCloudCores() {
+        return totalCloudCores;
+    }
+
+    public int getTotalCloudInstanceCount() {
+        return totalCloudInstanceCount;
+    }
+
     public void addPhysical(int cores, int sockets, int instances) {
         totalPhysicalCores += cores;
         totalPhysicalSockets += sockets;
@@ -105,14 +122,23 @@ public class ProductUsageCalculation {
         totalInstanceCount += instances;
     }
 
+    public void addToCloud(int cores, int sockets, int instances) {
+        totalCloudCores += cores;
+        totalCloudSockets += sockets;
+        totalCloudInstanceCount += instances;
+    }
+
     @Override
     public String toString() {
         return String.format(
             "[Product: %s, Cores: %s, Sockets: %s, Instances: %s, Physical Cores: %s, Physical Sockets: %s," +
-            " Physical Instances: %s, Hypervisor Cores: %s, Hypervisor Sockets: %s, Hypervisor Instance: %s]",
+            " Physical Instances: %s, Hypervisor Cores: %s, Hypervisor Sockets: %s, Hypervisor Instance: %s" +
+            " Cloud Cores: %s, Cloud Sockets: %s, Cloud Instances: %s]",
             productId, totalCores, totalSockets, totalInstanceCount,
             totalPhysicalCores, totalPhysicalSockets, totalPhysicalInstanceCount,
-            totalHypervisorCores, totalHypervisorSockets, totalHypervisorInstanceCount);
+            totalHypervisorCores, totalHypervisorSockets, totalHypervisorInstanceCount,
+            totalCloudCores, totalCloudSockets, totalCloudInstanceCount
+        );
     }
 
 }

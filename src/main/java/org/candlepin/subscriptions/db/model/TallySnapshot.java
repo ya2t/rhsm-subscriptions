@@ -41,7 +41,6 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.MapKeyEnumerated;
 import javax.persistence.Table;
 
-
 /**
  * Model object to represent pieces of tally data.
  */
@@ -159,6 +158,13 @@ public class TallySnapshot implements Serializable {
             snapshot.setHypervisorCores(hypervisor.getCores());
             snapshot.setHypervisorSockets(hypervisor.getSockets());
             snapshot.setHypervisorInstanceCount(hypervisor.getInstanceCount());
+        }
+
+        HardwareMeasurement aws = this.hardwareMeasurements.get(HardwareMeasurementType.AWS);
+        if (aws != null) {
+            snapshot.setAwsCores(aws.getCores());
+            snapshot.setAwsSockets(aws.getSockets());
+            snapshot.setAwsInstanceCount(aws.getInstanceCount());
         }
 
         snapshot.setHasData(id != null);

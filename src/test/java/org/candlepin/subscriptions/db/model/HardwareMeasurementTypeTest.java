@@ -21,31 +21,17 @@
 
 package org.candlepin.subscriptions.db.model;
 
-import java.util.Arrays;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Enum to capture the various types of measurements in the hardware_measurements table
- */
-public enum HardwareMeasurementType {
-    PHYSICAL("physical"),
-    HYPERVISOR("hypervisor"),
-    TOTAL("total"),
-    AWS("aws");
+import org.junit.jupiter.api.Test;
 
-    private final String type;
+public class HardwareMeasurementTypeTest {
 
-    HardwareMeasurementType(String type) {
-        this.type = type;
-    }
-
-    @Override
-    public String toString() {
-        return this.type;
-    }
-
-    public boolean isCloudProvider() {
-        // Add cloud providers here as necessary
-        return Arrays.asList("aws").contains(type);
+    @Test
+    public void testIsCloudProvider() {
+        assertFalse(HardwareMeasurementType.HYPERVISOR.isCloudProvider());
+        assertFalse(HardwareMeasurementType.PHYSICAL.isCloudProvider());
+        assertFalse(HardwareMeasurementType.TOTAL.isCloudProvider());
+        assertTrue(HardwareMeasurementType.AWS.isCloudProvider());
     }
 }
-
