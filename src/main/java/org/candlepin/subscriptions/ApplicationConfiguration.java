@@ -22,6 +22,8 @@ package org.candlepin.subscriptions;
 
 import org.candlepin.insights.inventory.client.HostsApiFactory;
 import org.candlepin.insights.inventory.client.InventoryServiceProperties;
+import org.candlepin.subscriptions.cloudigrade.client.CloudigradeApiFactory;
+import org.candlepin.subscriptions.cloudigrade.client.CloudigradeApiProperties;
 import org.candlepin.subscriptions.files.FileAccountListSource;
 import org.candlepin.subscriptions.files.ProductIdToProductsMapSource;
 import org.candlepin.subscriptions.files.RoleToProductsMapSource;
@@ -169,4 +171,16 @@ public class ApplicationConfiguration implements WebMvcConfigurer {
         retryTemplate.setBackOffPolicy(backOffPolicy);
         return retryTemplate;
     }
+
+    @Bean
+    @ConfigurationProperties(prefix = "rhsm-subscriptions.cloudigrade")
+    public CloudigradeApiProperties cloudigradeApiProperties() {
+        return new CloudigradeApiProperties();
+    }
+
+    @Bean
+    public CloudigradeApiFactory cloudigradeApiFactory(CloudigradeApiProperties apiProps) {
+        return new CloudigradeApiFactory(apiProps);
+    }
+
 }

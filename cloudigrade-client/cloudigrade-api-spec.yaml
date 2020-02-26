@@ -7,7 +7,7 @@ info:
   version: 1.0.0
 
 paths:
-  /concurrent:
+  /concurrent/:
     description: "Operations on concurrent usages"
     parameters:
     - name: limit
@@ -36,6 +36,10 @@ paths:
                 $ref: '#/components/schemas/ConcurrencyReport'
 
 components:
+  securitySchemes:
+    basicAuth:     # <-- arbitrary name for the security scheme
+      type: http
+      scheme: basic
   schemas:
     ConcurrencyReport:
       properties:
@@ -104,3 +108,6 @@ components:
           type: string
         usage:
           type: string
+
+security:
+  - basicAuth: []

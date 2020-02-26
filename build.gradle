@@ -157,6 +157,7 @@ dependencies {
 
     compile project(":api")
     compile project(":insights-inventory-client")
+    compile project(":cloudigrade-client")
 
     // This starter pulls in Spring Boot versions that we don't want.  The actual classes that we need are
     // baked into the starter artifact itself which is peculiar but sometimes that's how the cookie crumbles.

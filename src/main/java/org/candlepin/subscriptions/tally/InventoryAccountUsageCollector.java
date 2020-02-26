@@ -20,6 +20,10 @@
  */
 package org.candlepin.subscriptions.tally;
 
+import org.candlepin.subscriptions.cloudigrade.CloudigradeService;
+import org.candlepin.subscriptions.cloudigrade.api.model.ConcurrencyReport;
+import org.candlepin.subscriptions.cloudigrade.api.model.ConcurrentUsage;
+import org.candlepin.subscriptions.db.model.HardwareMeasurementType;
 import org.candlepin.subscriptions.tally.collector.ProductUsageCollectorFactory;
 import org.candlepin.subscriptions.tally.facts.FactNormalizer;
 import org.candlepin.subscriptions.tally.facts.NormalizedFacts;
@@ -32,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 /**
@@ -44,11 +49,13 @@ public class InventoryAccountUsageCollector {
 
     private final FactNormalizer factNormalizer;
     private final ClassificationProxyRepository proxyRepository;
+    private final CloudigradeService cloudigradeService;
 
     public InventoryAccountUsageCollector(FactNormalizer factNormalizer,
-        ClassificationProxyRepository proxyRepository) {
+        ClassificationProxyRepository proxyRepository, CloudigradeService cloudigradeService) {
         this.factNormalizer = factNormalizer;
         this.proxyRepository = proxyRepository;
+        this.cloudigradeService = cloudigradeService;
     }
 
     @SuppressWarnings("squid:S3776")
@@ -100,11 +107,46 @@ public class InventoryAccountUsageCollector {
             });
         }
 
+        collectCloudigradeData(accounts, calcsByAccount);
+
         if (log.isDebugEnabled()) {
             calcsByAccount.values().forEach(calc -> log.debug("Account Usage: {}", calc));
         }
 
         return calcsByAccount.values();
+    }
+
+    private void collectCloudigradeData(Collection<String> configuredAccounts,
+        Map<String, AccountUsageCalculation> calcsByAccount) {
+        // Get all cloudigrade measurements
+        for (String account : configuredAccounts) {
+            ConcurrencyReport report = cloudigradeService.getReport(account);
+            if (report.getData().isEmpty()) {
+                // Nothing to add
+                continue;
+            }
+
+            // We are only pulling data back for a single day (today)
+            ConcurrentUsage usage = report.getData().get(0);
+            if (usage.getInstances() == 0) {
+                // Nothing to add
+                continue;
+            }
+
+            // Ensure that there's an account calculation for this account. If a host
+            // wasn't present in HBI it may have not been added.
+            calcsByAccount.putIfAbsent(account, new AccountUsageCalculation(account));
+
+            AccountUsageCalculation calc = calcsByAccount.get(account);
+            // Cloudigrade only tracks RHEL at the moment.
+            ProductUsageCalculation rhelCalc = calc.containsProductCalculation("RHEL") ?
+                calc.getProductCalculation("RHEL") : new ProductUsageCalculation("RHEL");
+
+            // Cores are not applicable for aws cloud providers so we set it to 0.
+            rhelCalc.addCloudProvider(HardwareMeasurementType.AWS_CLOUDIGRADE,
+                0, usage.getInstances(), usage.getInstances());
+            calc.addProductCalculation(rhelCalc);
+        }
     }
 
 }

@@ -21,6 +21,9 @@
 package org.candlepin.subscriptions.tally;
 
 import org.candlepin.subscriptions.ApplicationProperties;
+import org.candlepin.subscriptions.cloudigrade.CloudigradeService;
+import org.candlepin.subscriptions.cloudigrade.api.model.ConcurrencyReport;
+import org.candlepin.subscriptions.cloudigrade.api.model.ConcurrentUsage;
 import org.candlepin.subscriptions.db.TallySnapshotRepository;
 import org.candlepin.subscriptions.exception.SnapshotProducerException;
 import org.candlepin.subscriptions.files.ProductIdToProductsMapSource;
@@ -46,11 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.micrometer.core.annotation.Timed;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Produces usage snapshot for all configured accounts.
@@ -72,6 +71,8 @@ public class UsageSnapshotProducer {
     private final YearlySnapshotRoller yearlyRoller;
     private final QuarterlySnapshotRoller quarterlyRoller;
 
+    private final CloudigradeService cloudigradeService;
+
     @SuppressWarnings("squid:S00107")
     @Autowired
     public UsageSnapshotProducer(FactNormalizer factNormalizer, AccountListSource accountListSource,
@@ -79,7 +80,8 @@ public class UsageSnapshotProducer {
         RoleToProductsMapSource roleToProductsMapSource, InventoryAccountUsageCollector accountUsageCollector,
         TallySnapshotRepository tallyRepo, ApplicationClock clock,
         ApplicationProperties applicationProperties,
-        @Qualifier("collectorRetryTemplate") RetryTemplate retryTemplate) throws IOException {
+        @Qualifier("collectorRetryTemplate") RetryTemplate retryTemplate,
+        CloudigradeService cloudigradeService) throws IOException {
 
         this.accountListSource = accountListSource;
         this.applicableProducts = new HashSet<>();
@@ -94,6 +96,7 @@ public class UsageSnapshotProducer {
         monthlyRoller = new MonthlySnapshotRoller(tallyRepo, clock);
         yearlyRoller = new YearlySnapshotRoller(tallyRepo, clock);
         quarterlyRoller = new QuarterlySnapshotRoller(tallyRepo, clock);
+        this.cloudigradeService = cloudigradeService;
     }
 
     @Transactional
@@ -132,6 +135,7 @@ public class UsageSnapshotProducer {
                 log.error("Could not collect for accounts {}", accounts, e);
                 continue;
             }
+
             dailyRoller.rollSnapshots(accounts, accountCalcs);
             weeklyRoller.rollSnapshots(accounts, accountCalcs);
             monthlyRoller.rollSnapshots(accounts, accountCalcs);

@@ -34,7 +34,8 @@ public enum HardwareMeasurementType {
     AWS,
     GOOGLE,
     ALIBABA,
-    AZURE;
+    AZURE,
+    AWS_CLOUDIGRADE;
 
     public static boolean isSupportedCloudProvider(String name) {
         if (name == null || name.isEmpty()) {
@@ -51,7 +52,7 @@ public enum HardwareMeasurementType {
     }
 
     public static List<HardwareMeasurementType> getCloudProviderTypes() {
-        return Arrays.asList(AWS, GOOGLE, AZURE, ALIBABA);
+        return Arrays.asList(AWS, AWS_CLOUDIGRADE, GOOGLE, AZURE, ALIBABA);
     }
 }
 
