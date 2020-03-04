@@ -60,7 +60,7 @@ public class InventoryAccountUsageCollector {
 
     @SuppressWarnings("squid:S3776")
     @Transactional(value = "inventoryTransactionManager", readOnly = true)
-    public Collection<AccountUsageCalculation> collect(Collection<String> products,
+    public Map<String, AccountUsageCalculation> collect(Collection<String> products,
         Collection<String> accounts) {
         Map<String, AccountUsageCalculation> calcsByAccount = new HashMap<>();
         try (Stream<ClassifiedInventoryHostFacts> hostFactStream = proxyRepository.getFacts(accounts)) {
@@ -107,46 +107,11 @@ public class InventoryAccountUsageCollector {
             });
         }
 
-        collectCloudigradeData(accounts, calcsByAccount);
-
         if (log.isDebugEnabled()) {
             calcsByAccount.values().forEach(calc -> log.debug("Account Usage: {}", calc));
         }
 
-        return calcsByAccount.values();
-    }
-
-    private void collectCloudigradeData(Collection<String> configuredAccounts,
-        Map<String, AccountUsageCalculation> calcsByAccount) {
-        // Get all cloudigrade measurements
-        for (String account : configuredAccounts) {
-            ConcurrencyReport report = cloudigradeService.getReport(account);
-            if (report.getData().isEmpty()) {
-                // Nothing to add
-                continue;
-            }
-
-            // We are only pulling data back for a single day (today)
-            ConcurrentUsage usage = report.getData().get(0);
-            if (usage.getInstances() == 0) {
-                // Nothing to add
-                continue;
-            }
-
-            // Ensure that there's an account calculation for this account. If a host
-            // wasn't present in HBI it may have not been added.
-            calcsByAccount.putIfAbsent(account, new AccountUsageCalculation(account));
-
-            AccountUsageCalculation calc = calcsByAccount.get(account);
-            // Cloudigrade only tracks RHEL at the moment.
-            ProductUsageCalculation rhelCalc = calc.containsProductCalculation("RHEL") ?
-                calc.getProductCalculation("RHEL") : new ProductUsageCalculation("RHEL");
-
-            // Cores are not applicable for aws cloud providers so we set it to 0.
-            rhelCalc.addCloudProvider(HardwareMeasurementType.AWS_CLOUDIGRADE,
-                0, usage.getInstances(), usage.getInstances());
-            calc.addProductCalculation(rhelCalc);
-        }
+        return calcsByAccount;
     }
 
 }

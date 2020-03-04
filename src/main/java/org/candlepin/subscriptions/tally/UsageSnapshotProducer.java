@@ -21,9 +21,6 @@
 package org.candlepin.subscriptions.tally;
 
 import org.candlepin.subscriptions.ApplicationProperties;
-import org.candlepin.subscriptions.cloudigrade.CloudigradeService;
-import org.candlepin.subscriptions.cloudigrade.api.model.ConcurrencyReport;
-import org.candlepin.subscriptions.cloudigrade.api.model.ConcurrentUsage;
 import org.candlepin.subscriptions.db.TallySnapshotRepository;
 import org.candlepin.subscriptions.exception.SnapshotProducerException;
 import org.candlepin.subscriptions.files.ProductIdToProductsMapSource;
@@ -64,24 +61,22 @@ public class UsageSnapshotProducer {
     private final int accountBatchSize;
     private final RetryTemplate retryTemplate;
 
-    private final InventoryAccountUsageCollector accountUsageCollector;
+    private final InventoryAccountUsageCollector inventoryCollector;
+    private final CloudigradeAccountUsageCollector cloudigradeCollector;
     private final DailySnapshotRoller dailyRoller;
     private final WeeklySnapshotRoller weeklyRoller;
     private final MonthlySnapshotRoller monthlyRoller;
     private final YearlySnapshotRoller yearlyRoller;
     private final QuarterlySnapshotRoller quarterlyRoller;
 
-    private final CloudigradeService cloudigradeService;
-
     @SuppressWarnings("squid:S00107")
     @Autowired
     public UsageSnapshotProducer(FactNormalizer factNormalizer, AccountListSource accountListSource,
         ProductIdToProductsMapSource productIdToProductsMapSource,
-        RoleToProductsMapSource roleToProductsMapSource, InventoryAccountUsageCollector accountUsageCollector,
-        TallySnapshotRepository tallyRepo, ApplicationClock clock,
-        ApplicationProperties applicationProperties,
-        @Qualifier("collectorRetryTemplate") RetryTemplate retryTemplate,
-        CloudigradeService cloudigradeService) throws IOException {
+        RoleToProductsMapSource roleToProductsMapSource, InventoryAccountUsageCollector inventoryCollector,
+        CloudigradeAccountUsageCollector cloudigradeCollector, TallySnapshotRepository tallyRepo,
+        ApplicationClock clock, ApplicationProperties applicationProperties,
+        @Qualifier("collectorRetryTemplate") RetryTemplate retryTemplate) throws IOException {
 
         this.accountListSource = accountListSource;
         this.applicableProducts = new HashSet<>();
@@ -90,13 +85,13 @@ public class UsageSnapshotProducer {
         roleToProductsMapSource.getValue().values().forEach(this.applicableProducts::addAll);
         this.accountBatchSize = applicationProperties.getAccountBatchSize();
 
-        this.accountUsageCollector = accountUsageCollector;
+        this.inventoryCollector = inventoryCollector;
+        this.cloudigradeCollector = cloudigradeCollector;
         dailyRoller = new DailySnapshotRoller(tallyRepo, clock);
         weeklyRoller = new WeeklySnapshotRoller(tallyRepo, clock);
         monthlyRoller = new MonthlySnapshotRoller(tallyRepo, clock);
         yearlyRoller = new YearlySnapshotRoller(tallyRepo, clock);
         quarterlyRoller = new QuarterlySnapshotRoller(tallyRepo, clock);
-        this.cloudigradeService = cloudigradeService;
     }
 
     @Transactional
@@ -127,9 +122,12 @@ public class UsageSnapshotProducer {
         for (List<String> accounts : Iterables.partition(accountList, accountBatchSize)) {
             Collection<AccountUsageCalculation> accountCalcs;
             try {
-                accountCalcs = retryTemplate.execute(context ->
-                    accountUsageCollector.collect(this.applicableProducts, accounts)
-                );
+                accountCalcs = retryTemplate.execute(context -> {
+                    Map<String, AccountUsageCalculation> accountToCalcs =
+                        inventoryCollector.collect(this.applicableProducts, accounts);
+                    cloudigradeCollector.collect(accountToCalcs, accounts);
+                    return accountToCalcs.values();
+                });
             }
             catch (Exception e) {
                 log.error("Could not collect for accounts {}", accounts, e);
