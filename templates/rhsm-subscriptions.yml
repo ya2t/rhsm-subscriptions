@@ -1,0 +1,456 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: rhsm-subscriptions
+
+parameters:
+  - name: NAMESPACE
+    description: Name of your project (e.g. myproject)
+  - name: IMAGE_NAMESPACE
+    description: The namespace containing the build image.
+    value: buildfactory
+  - name: IMAGE_TAG
+    description: The image tag that should be used for the deployment
+    value: latest
+  - name: INVENTORY_DATABASE_NAME
+    description: The name of the inventory database
+    value: "insights"
+    required: true
+
+objects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: rhsm-subscriptions-config
+    labels:
+      app: rhsm-subscriptions
+    namespace: ${NAMESPACE}
+  data:
+    logback.xml: |-
+      <?xml version="1.0" encoding="UTF-8"?>
+      <configuration scan="true" scanPeriod="60 seconds">
+        <contextName>rhsm-subscriptions</contextName>
+        <appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        </appender>
+        {% if cloudwatch_enabled %}
+        <appender name="EmergencyAppender" class="ch.qos.logback.core.ConsoleAppender">
+          <filter class="org.candlepin.insights.logging.CloudWatchEmergencyFilter" />
+          <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+        </appender>
+        <appender name="CloudWatchAppender" class="com.j256.cloudwatchlogbackappender.CloudWatchAppender">
+          <!-- TODO Not sure how to set this one -->
+          <region>${AWS_REGION}</region>
+          <logGroup>{{ cloudwatch_log_group }}</logGroup>
+          <logStream>${NAMESPACE}</logStream>
+          <layout class="net.logstash.logback.layout.LogstashLayout" />
+          <appender-ref ref="EmergencyAppender" />
+        </appender>
+        {% endif %}
+
+        <logger name="org.candlepin" level="{{ log_level }}"/>
+
+        <root level="WARN">
+          {% if cloudwatch_enabled %}
+          <appender-ref ref="CloudWatchAppender" />
+          {% endif %}
+          <appender-ref ref="ConsoleAppender" />
+        </root>
+      </configuration>
+
+    subscriptions.properties: |-
+      rhsm-subscriptions.prettyPrintJson={{ pretty_print_json }}
+      rhsm-subscriptions.datasource.url=jdbc:postgresql://${RHSM_SUBSCRIPTIONS_DATABASE_HOSTNAME}:5432/${RHSM_SUBSCRIPTIONS_DATABASE_NAME}
+      rhsm-subscriptions.datasource.username=${RHSM_SUBSCRIPTIONS_DATABASE_USER}
+      rhsm-subscriptions.datasource.password=${RHSM_SUBSCRIPTIONS_DATABASE_PASSWORD}
+      rhsm-subscriptions.tally-retention-policy.daily={{ rhsm_subscriptions_tally_retention.daily }}
+      rhsm-subscriptions.tally-retention-policy.weekly={{ rhsm_subscriptions_tally_retention.weekly }}
+      rhsm-subscriptions.tally-retention-policy.monthly={{ rhsm_subscriptions_tally_retention.monthly }}
+      rhsm-subscriptions.tally-retention-policy.quarterly={{ rhsm_subscriptions_tally_retention.quarterly }}
+      rhsm-subscriptions.tally-retention-policy.yearly={{ rhsm_subscriptions_tally_retention.yearly }}
+      rhsm-subscriptions.inventory-service.datasource.url=jdbc:postgresql://${INVENTORY_DATABASE_HOSTNAME}:5432/${INVENTORY_DATABASE_NAME}
+      rhsm-subscriptions.inventory-service.datasource.username=${INVENTORY_DATABASE_USER}
+      rhsm-subscriptions.inventory-service.datasource.password=${INVENTORY_DATABASE_PASSWORD}
+      rhsm-subscriptions.rhelProductListResourceLocation=file:/config/rhel-product-list.txt
+      rhsm-subscriptions.account-batch-size=1
+      rhsm-subscriptions.accountListResourceLocation=file:/config/account-list.txt
+      rhsm-subscriptions.reporting_account_whitelist_resource_location=file:/config/reporting-api-account-whitelist.txt
+      rhsm-subscriptions.productWhitelistResourceLocation=file:/config/product-whitelist.txt
+      rhsm-subscriptions.jobs.captureSnapshotSchedule={{ rhsm_subscriptions_snapshot_schedule }}
+      rhsm-subscriptions.enableJobProcessing=${ENABLE_JOB_PROCESSING:false}
+      rhsm-subscriptions.dev-mode={{ rhsm_subscriptions_dev_mode }}
+      rhsm-subscriptions.enableIngressEndpoint=${ENABLE_INGRESS_ENDPOINT:false}
+
+    ssl.properties: |-
+      # force client cert auth for ingress endpoints
+      server.port=8443
+      server.ssl.client-auth=NEED
+      server.ssl.enabled=true
+
+      server.ssl.key-store=/secrets/{{ keystore_filename }}
+      server.ssl.key-store-password=${KEYSTORE_PASSWORD}
+
+      server.ssl.trust-store=/secrets/{{ ingress_trust_filename }}
+      server.ssl.trust-store-password=${TRUSTSTORE_PASSWORD}
+
+      # put /actuator calls on 8080
+      management.server.port=8080
+      management.server.ssl.enabled=false
+
+    rhel-product-list.txt: |-
+      {% for product in rhel_product_list %}{{ product }}
+      {% endfor %}
+
+    account-list.txt: |-
+      {% for account in rhsm_subscriptions_account_list %}{{ account }}
+      {% endfor %}{% for xtra_account in rhsm_subscriptions_mock_data_accounts %}{{ xtra_account }}
+      {% endfor %}
+
+    reporting-api-account-whitelist.txt: |-
+      {% for account in reporting_api_whitelisted_accounts %}{{ account }}
+      {% endfor %}{% for xtra_account in rhsm_subscriptions_mock_data_accounts %}{{ xtra_account }}
+      {% endfor %}
+
+    product-whitelist.txt: |-
+      {% for product in whitelisted_products %}{{ product }}
+      {% endfor %}
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: rhsm-subscriptions
+    name: rhsm-subscriptions
+    namespace: ${NAMESPACE}
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: rhsm-subscriptions
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: rhsm-subscriptions
+          deploymentconfig: rhsm-subscriptions
+        namespace: ${NAMESPACE}
+        annotations:
+          prometheus.io/path: /actuator/prometheus
+          prometheus.io/port: '8080'
+          prometheus.io/scrape: 'true'
+      spec:
+        containers:
+          - image: ${IMAGE_NAMESPACE}/rhsm-subscriptions
+            imagePullPolicy: Always
+            name: rhsm-subscriptions
+            env:
+              - name: JAVA_OPTIONS
+                value: -Dlogging.config=/config/logback.xml -Dspring.config.additional-location=file:/config/subscriptions.properties
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_HOSTNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-host
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-name
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-user
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-password
+              - name: INVENTORY_DATABASE_HOSTNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: inventory-rds-db
+                    key: hostname
+              - name: INVENTORY_DATABASE_NAME
+                value: ${INVENTORY_DATABASE_NAME}
+              - name: INVENTORY_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: inventory-rds-db
+                    key: username
+              - name: INVENTORY_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: inventory-rds-db
+                    key: password
+              - name: KEYSTORE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: keystore-password
+              - name: TRUSTSTORE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: truststore-password
+              {% if cloudwatch_enabled %}
+              - name: AWS_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_REGION_NAME
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_ACCESS_KEY_ID
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_SECRET_ACCESS_KEY
+              {% endif %}
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /actuator/health
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 90
+              periodSeconds: 20
+              successThreshold: 1
+              timeoutSeconds: 3
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /actuator/health
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 90
+              periodSeconds: 20
+              successThreshold: 1
+              timeoutSeconds: 3
+            resources:
+              requests:
+                cpu: 200m
+                memory: 100Mi
+              limits:
+                cpu: 300m
+                memory: 500Mi
+            ports:
+              - containerPort: 8080
+                protocol: TCP
+              - containerPort: 8778
+                name: jolokia
+                protocol: TCP
+            volumeMounts:
+              - name: config
+                mountPath: /config
+              - name: secrets
+                mountPath: /secrets
+            workingDir: /
+        volumes:
+          - name: config
+            configMap:
+              name: rhsm-subscriptions-config
+          - name: secrets
+            secret:
+              secretName: rhsm-subscriptions
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 75
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - rhsm-subscriptions
+          from:
+            kind: ImageStreamTag
+            name: rhsm-subscriptions:${IMAGE_TAG}
+            namespace: ${IMAGE_NAMESPACE}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: rhsm-subscriptions
+    name: rhsm-subscriptions
+    namespace: "${NAMESPACE}"
+  spec:
+    ports:
+      - port: 8080
+        protocol: TCP
+        targetPort: 8080
+    selector:
+      deploymentconfig: rhsm-subscriptions
+
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: rhsm-subscriptions-jobs
+    name: rhsm-subscriptions-jobs
+    namespace: ${NAMESPACE}
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: rhsm-subscriptions-jobs
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: rhsm-subscriptions-jobs
+          deploymentconfig: rhsm-subscriptions-jobs
+        namespace: ${NAMESPACE}
+        annotations:
+          prometheus.io/path: /actuator/prometheus
+          prometheus.io/port: '8080'
+          prometheus.io/scrape: 'true'
+      spec:
+        containers:
+          - image: ${IMAGE_NAMESPACE}/rhsm-subscriptions
+            imagePullPolicy: Always
+            name: rhsm-subscriptions
+            env:
+              - name: JAVA_OPTIONS
+                value: -Dlogging.config=/config/logback.xml -Dspring.config.additional-location=file:/config/subscriptions.properties
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_HOSTNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-host
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-name
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-user
+              - name: RHSM_SUBSCRIPTIONS_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: database-password
+              - name: INVENTORY_DATABASE_HOSTNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: inventory-rds-db
+                    key: hostname
+              - name: INVENTORY_DATABASE_NAME
+                value: ${INVENTORY_DATABASE_NAME}
+              - name: INVENTORY_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: inventory-rds-db
+                    key: username
+              - name: INVENTORY_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: inventory-rds-db
+                    key: password
+              - name: ENABLE_JOB_PROCESSING
+                value: "true"
+              - name: ENABLE_INGRESS_ENDPOINT
+                value: "true"
+              - name: KEYSTORE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: keystore-password
+              - name: TRUSTSTORE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: rhsm-subscriptions
+                    key: truststore-password
+              {% if cloudwatch_enabled %}
+              - name: AWS_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_REGION_NAME
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_ACCESS_KEY_ID
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: cloudwatch
+                    key: CW_AWS_SECRET_ACCESS_KEY
+              {% endif %}
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1000Mi
+              limits:
+                cpu: 1000m
+                memory: 2000Mi
+            ports:
+              - containerPort: 8443
+                protocol: TCP
+              - containerPort: 8778
+                name: jolokia
+                protocol: TCP
+              - containerPort: 8080
+                protocol: TCP
+            volumeMounts:
+              - name: config
+                mountPath: /config
+              - name: secrets
+                mountPath: /secrets
+            workingDir: /
+        volumes:
+          - name: config
+            configMap:
+              name: rhsm-subscriptions-config
+          - name: secrets
+            secret:
+              secretName: rhsm-subscriptions
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 75
+    triggers:
+      - type: ConfigChange
+      - type: ImageChange
+        imageChangeParams:
+          automatic: true
+          containerNames:
+            - rhsm-subscriptions
+          from:
+            kind: ImageStreamTag
+            name: rhsm-subscriptions:${IMAGE_TAG}
+            namespace: ${IMAGE_NAMESPACE}
+
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: rhsm-subscriptions
+    name: rhsm-subscriptions-ingress
+    namespace: "${NAMESPACE}"
+  spec:
+    ports:
+      - port: 8443
+        protocol: TCP
+        targetPort: 8443
+    selector:
+      deploymentconfig: rhsm-subscriptions-jobs
+
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: rhsm-subscriptions-ingress
+    labels:
+      app: rhsm-subscriptions-ingress
+    namespace: "${NAMESPACE}"
+  spec:
+    to:
+      kind: Service
+      name: rhsm-subscriptions-ingress
+    tls:
+      termination: passthrough

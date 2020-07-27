@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: rhsm-subscriptions-egress
+
+parameters:
+  - name: NAMESPACE
+    description: Name of your project (e.g. myproject)
+  - name: IMAGE_TAG
+    description: The image tag to apply to the build
+    value: latest
+    required: true
+  - name: MEMORY_ALLOCATION
+    description: How much memory should be allocated (i.e 1Gi)
+    displayName: Memory Allocation
+    value: 256Mi
+    required: true
+  - name: CPU_ALLOCATION
+    description: How many cpu should be allocated
+    displayName: CPU Allocation
+    value: 500m
+    required: true
+
+objects:
+
+  - kind: ImageStream
+    apiVersion: v1
+    metadata:
+      labels:
+        app: rhsm-subscriptions-egress
+      name: rhsm-subscriptions-egress
+      namespace: "${NAMESPACE}"
+
+- kind: ImageStream
+  metadata:
+    labels:
+      app: rhsm-subscriptions-egress
+    name: rhsm-subscriptions-egress
+    namespace: "${NAMESPACE}"
+
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: subscriptions
+    name: rhsm-subscriptions-egress
+    namespace: "${ NAMESPACE }"
+  spec:
+    completionDeadlineSeconds: 1800
+    output:
+      to:
+        kind: ImageStreamTag
+        name: rhsm-subscriptions-egress:${IMAGE_TAG}
+    source:
+      dockerfile: |-
+        FROM centos/python-36-centos7:latest
+        USER root
+        RUN yum update -y && yum install postgresql -y && yum clean all -y
+        RUN pip install --no-cache-dir awscli
+        USER 1001
+    strategy:
+      type: Docker
+    triggers:
+      - type: ConfigChange
+    resources:
+      limits:
+        cpu: ${CPU_ALLOCATION}
+        memory: ${MEMORY_ALLOCATION}
