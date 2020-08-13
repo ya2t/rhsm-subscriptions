@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Template
+labels:
+  app: rhsm-subscriptions
+  template: rhsm-subscriptions-cron-purge
+metadata:
+  annotations:
+    description: RHEL-based container for running rhsm-subscriptions PurgeSnapshots job.
+  name: rhsm-subscriptions-cron-purge
+
+parameters:
+  - name: LOGGING_LEVEL_ROOT
+    value: WARN
+  - name: LOGGING_LEVEL
+    value: INFO
+  - name: IMAGE_TAG
+    value: latest
+  - name: MEMORY_REQUEST
+    value: 100Mi
+  - name: MEMORY_LIMIT
+    value: 256Mi
+  - name: CPU_REQUEST
+    value: 200m
+  - name: CPU_LIMIT
+    value: 300m
+
+objects:
+  - apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: rhsm-subscriptions-cron-purge
+    spec:
+      schedule: "@hourly"
+      jobTemplate:
+        spec:
+          activeDeadlineSeconds: 1800
+          template:
+            metadata:
+              labels:
+                parent: rhsm-subscriptions-cron
+            spec:
+              restartPolicy: Never
+              imagePullSecrets:
+                - name: quay-cloudservices-pull
+              containers:
+                - image: quay.io/cloudservices/rhsm-subscriptions-egress:${IMAGE_TAG}
+                  imagePullPolicy: Always
+                  name: rhsm-subscriptions-cron
+                  env:
+                    - name: JAVA_OPTIONS
+                      value: -Dspring.profiles.active=purge-snapshots
+                    - name: JAVA_MAX_MEM_RATIO
+                      value: '85'
+                    - name: GC_MAX_METASPACE_SIZE
+                      value: '256'
+                    - name: LOGGING_LEVEL_ROOT
+                      value: ${LOGGING_LEVEL_ROOT}
+                    - name: LOGGING_LEVEL_ORG_CANDLEPIN
+                      value: ${LOGGING_LEVEL}
+                    - name: DATABASE_HOST
+                      valueFrom:
+                        secretKeyRef:
+                          name: rhsm-db
+                          key: db.host
+                    - name: DATABASE_PORT
+                      valueFrom:
+                        secretKeyRef:
+                          name: rhsm-db
+                          key: db.port
+                    - name: DATABASE_USERNAME
+                      valueFrom:
+                        secretKeyRef:
+                          name: rhsm-db
+                          key: db.user
+                    - name: DATABASE_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: rhsm-db
+                          key: db.password
+                    - name: DATABASE_DATABASE
+                      valueFrom:
+                        secretKeyRef:
+                          name: rhsm-db
+                          key: db.name
+                  livenessProbe:
+                    failureThreshold: 3
+                    httpGet:
+                      path: /actuator/health
+                      port: 8080
+                      scheme: HTTP
+                    initialDelaySeconds: 90
+                    periodSeconds: 20
+                    successThreshold: 1
+                    timeoutSeconds: 3
+                    readinessProbe:
+                      failureThreshold: 3
+                      httpGet:
+                        path: /actuator/health
+                        port: 8080
+                        scheme: HTTP
+                      initialDelaySeconds: 90
+                      periodSeconds: 20
+                      successThreshold: 1
+                      timeoutSeconds: 3
+                    resources:
+                      requests:
+                        cpu: ${CPU_REQUEST}
+                        memory: ${MEMORY_REQUEST}
+                      limits:
+                        cpu: ${CPU_LIMIT}
+                        memory: ${MEMORY_LIMIT}
+                    ports:
+                      - containerPort: 8080
+                        protocol: TCP
+                      - containerPort: 8778
+                        name: jolokia
+                        protocol: TCP
+                    volumeMounts:
+                      - name: config
+                        mountPath: /config
+                    workingDir: /
+                    volumes:
+                      - name: config
+                        configMap:
+                          name: rhsm-subscriptions-config
+                    restartPolicy: Always
+                    terminationGracePeriodSeconds: 75
+                    imagePullSecrets:
+                      - name: quay-cloudservices-pull
+                  triggers:
+                    - type: ConfigChange
