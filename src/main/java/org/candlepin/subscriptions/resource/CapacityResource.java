@@ -56,12 +56,11 @@ import javax.ws.rs.core.UriInfo;
 @Component
 public class CapacityResource implements CapacityApi {
 
-    @Context
-    UriInfo uriInfo;
-
     private final SubscriptionCapacityRepository repository;
     private final PageLinkCreator pageLinkCreator;
     private final ApplicationClock clock;
+    @Context
+    UriInfo uriInfo;
 
     public CapacityResource(SubscriptionCapacityRepository repository, PageLinkCreator pageLinkCreator,
         ApplicationClock clock) {
@@ -90,15 +89,8 @@ public class CapacityResource implements CapacityApi {
             sanitizedUsage = null;
         }
 
-        List<CapacitySnapshot> capacities = getCapacities(
-            ownerId,
-            productId,
-            sanitizedServiceLevel,
-            sanitizedUsage,
-            granularityValue,
-            reportBegin,
-            reportEnd
-        );
+        List<CapacitySnapshot> capacities = getCapacities(ownerId, productId, sanitizedServiceLevel,
+            sanitizedUsage, granularityValue, reportBegin, reportEnd);
 
         List<CapacitySnapshot> data;
         TallyReportLinks links;
@@ -146,14 +138,8 @@ public class CapacityResource implements CapacityApi {
         Usage usage, Granularity granularity, @NotNull OffsetDateTime reportBegin,
         @NotNull OffsetDateTime reportEnd) {
 
-        List<SubscriptionCapacity> matches = repository.findByOwnerAndProductId(
-            ownerId,
-            productId,
-            sla,
-            usage,
-            reportBegin,
-            reportEnd
-        );
+        List<SubscriptionCapacity> matches = repository
+            .findByOwnerAndProductId(ownerId, productId, sla, usage, reportBegin, reportEnd);
 
         SnapshotTimeAdjuster timeAdjuster = SnapshotTimeAdjuster.getTimeAdjuster(clock, granularity);
 
@@ -200,20 +186,13 @@ public class CapacityResource implements CapacityApi {
             }
         }
 
-        return new CapacitySnapshot()
-            .date(date)
-            .sockets(sockets)
-            .physicalSockets(physicalSockets)
-            .hypervisorSockets(hypervisorSockets)
-            .cores(cores)
-            .physicalCores(physicalCores)
-            .hypervisorCores(hypervisorCores)
-            .hasInfiniteQuantity(false);
+        return new CapacitySnapshot().date(date).sockets(sockets).physicalSockets(physicalSockets)
+            .hypervisorSockets(hypervisorSockets).cores(cores).physicalCores(physicalCores)
+            .hypervisorCores(hypervisorCores).hasInfiniteQuantity(false);
     }
 
     private int sanitize(Integer value) {
         return value != null ? value : 0;
     }
-
 
 }
