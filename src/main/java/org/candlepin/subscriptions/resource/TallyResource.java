@@ -21,7 +21,6 @@
 package org.candlepin.subscriptions.resource;
 
 import org.candlepin.subscriptions.db.TallySnapshotRepository;
-import org.candlepin.subscriptions.db.model.Granularity;
 import org.candlepin.subscriptions.db.model.ServiceLevel;
 import org.candlepin.subscriptions.db.model.Usage;
 import org.candlepin.subscriptions.resteasy.PageLinkCreator;
@@ -29,6 +28,7 @@ import org.candlepin.subscriptions.security.auth.ReportingAccessRequired;
 import org.candlepin.subscriptions.tally.filler.ReportFiller;
 import org.candlepin.subscriptions.tally.filler.ReportFillerFactory;
 import org.candlepin.subscriptions.util.ApplicationClock;
+import org.candlepin.subscriptions.utilization.api.model.Granularity;
 import org.candlepin.subscriptions.utilization.api.model.TallyReport;
 import org.candlepin.subscriptions.utilization.api.model.TallyReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.TallySnapshot;
@@ -68,10 +68,10 @@ public class TallyResource implements TallyApi {
         this.clock = clock;
     }
 
+    @ReportingAccessRequired
     @SuppressWarnings("linelength")
     @Override
-    @ReportingAccessRequired
-    public TallyReport getTallyReport(String productId, @NotNull String granularity,
+    public TallyReport getTallyReport(String productId, @NotNull Granularity granularity,
         @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
         // When limit and offset are not specified, we will fill the report with dummy
@@ -85,7 +85,10 @@ public class TallyResource implements TallyApi {
         String accountNumber = ResourceUtils.getAccountNumber();
         ServiceLevel serviceLevel = ResourceUtils.sanitizeServiceLevel(sla);
         Usage effectiveUsage = ResourceUtils.sanitizeUsage(usage);
-        Granularity granularityValue = Granularity.valueOf(granularity.toUpperCase());
+
+        org.candlepin.subscriptions.db.model.Granularity granularityValue = org.candlepin.subscriptions.db.model.Granularity
+            .valueOf(granularity.toString().toUpperCase());
+
         Page<org.candlepin.subscriptions.db.model.TallySnapshot> snapshotPage = repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 accountNumber, productId, granularityValue, serviceLevel, effectiveUsage, beginning, ending,
@@ -98,7 +101,7 @@ public class TallyResource implements TallyApi {
         TallyReport report = new TallyReport();
         report.setData(snaps);
         report.setMeta(new TallyReportMeta());
-        report.getMeta().setGranularity(granularityValue.name());
+        report.getMeta().setGranularity(granularity);
         report.getMeta().setProduct(productId);
         report.getMeta().setServiceLevel(sla == null ? null : serviceLevel.getValue());
         report.getMeta().setUsage(usage == null ? null : effectiveUsage.getValue());
