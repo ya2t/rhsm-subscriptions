@@ -21,7 +21,6 @@
 package org.candlepin.subscriptions.resource;
 
 import org.candlepin.subscriptions.db.SubscriptionCapacityRepository;
-import org.candlepin.subscriptions.db.model.Granularity;
 import org.candlepin.subscriptions.db.model.ServiceLevel;
 import org.candlepin.subscriptions.db.model.SubscriptionCapacity;
 import org.candlepin.subscriptions.db.model.Usage;
@@ -32,6 +31,7 @@ import org.candlepin.subscriptions.util.SnapshotTimeAdjuster;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReport;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.CapacitySnapshot;
+import org.candlepin.subscriptions.utilization.api.model.Granularity;
 import org.candlepin.subscriptions.utilization.api.model.TallyReportLinks;
 import org.candlepin.subscriptions.utilization.api.resources.CapacityApi;
 
@@ -69,13 +69,14 @@ public class CapacityResource implements CapacityApi {
         this.clock = clock;
     }
 
-    @Override
     @ReportingAccessRequired
-    public CapacityReport getCapacityReport(String productId, @NotNull String granularity,
-        @NotNull OffsetDateTime reportBegin, @NotNull OffsetDateTime reportEnd, Integer offset,
+    @Override
+    public CapacityReport getCapacityReport(String productId, @NotNull Granularity granularity,
+        @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
 
-        Granularity granularityValue = Granularity.valueOf(granularity.toUpperCase());
+        org.candlepin.subscriptions.db.model.Granularity granularityValue = org.candlepin.subscriptions.db.model.Granularity
+            .valueOf(granularity.toString());
         String ownerId = ResourceUtils.getOwnerId();
 
         ServiceLevel sanitizedServiceLevel = ResourceUtils.sanitizeServiceLevel(sla);
@@ -90,7 +91,7 @@ public class CapacityResource implements CapacityApi {
         }
 
         List<CapacitySnapshot> capacities = getCapacities(ownerId, productId, sanitizedServiceLevel,
-            sanitizedUsage, granularityValue, reportBegin, reportEnd);
+            sanitizedUsage, granularityValue, beginning, ending);
 
         List<CapacitySnapshot> data;
         TallyReportLinks links;
@@ -135,7 +136,7 @@ public class CapacityResource implements CapacityApi {
     }
 
     private List<CapacitySnapshot> getCapacities(String ownerId, String productId, ServiceLevel sla,
-        Usage usage, Granularity granularity, @NotNull OffsetDateTime reportBegin,
+        Usage usage, org.candlepin.subscriptions.db.model.Granularity granularity, @NotNull OffsetDateTime reportBegin,
         @NotNull OffsetDateTime reportEnd) {
 
         List<SubscriptionCapacity> matches = repository
