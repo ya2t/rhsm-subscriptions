@@ -33,9 +33,11 @@ import org.candlepin.subscriptions.util.SnapshotTimeAdjuster;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReport;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.CapacitySnapshot;
+import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
 import org.candlepin.subscriptions.utilization.api.model.TallyReportLinks;
 import org.candlepin.subscriptions.utilization.api.resources.CapacityApi;
 
+import org.apache.commons.text.WordUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -57,12 +59,11 @@ import javax.ws.rs.core.UriInfo;
 @Component
 public class CapacityResource implements CapacityApi {
 
-    @Context
-    UriInfo uriInfo;
-
     private final SubscriptionCapacityRepository repository;
     private final PageLinkCreator pageLinkCreator;
     private final ApplicationClock clock;
+    @Context
+    UriInfo uriInfo;
 
     public CapacityResource(SubscriptionCapacityRepository repository, PageLinkCreator pageLinkCreator,
         ApplicationClock clock) {
@@ -73,11 +74,13 @@ public class CapacityResource implements CapacityApi {
 
     @Override
     @ReportingAccessRequired
-    public CapacityReport getCapacityReport(String productId, @NotNull String granularity,
-        @NotNull OffsetDateTime reportBegin, @NotNull OffsetDateTime reportEnd, Integer offset,
+    public CapacityReport getCapacityReport(String productId, @NotNull GranularityApiParam granularity,
+        @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
 
-        Granularity granularityValue = Granularity.valueOf(granularity.toUpperCase());
+        org.candlepin.subscriptions.db.model.Granularity granularityFromValue = org.candlepin.subscriptions.db.model.Granularity
+            .valueOf(granularity.toString().toUpperCase());
+
         String ownerId = ResourceUtils.getOwnerId();
 
         ServiceLevel sanitizedServiceLevel = ResourceUtils.sanitizeServiceLevel(sla);
@@ -91,15 +94,8 @@ public class CapacityResource implements CapacityApi {
             sanitizedUsage = null;
         }
 
-        List<CapacitySnapshot> capacities = getCapacities(
-            ownerId,
-            productId,
-            sanitizedServiceLevel,
-            sanitizedUsage,
-            granularityValue,
-            reportBegin,
-            reportEnd
-        );
+        List<CapacitySnapshot> capacities = getCapacities(ownerId, productId, sanitizedServiceLevel,
+            sanitizedUsage, granularityFromValue, beginning, ending);
 
         List<CapacitySnapshot> data;
         TallyReportLinks links;
@@ -117,7 +113,11 @@ public class CapacityResource implements CapacityApi {
         CapacityReport report = new CapacityReport();
         report.setData(data);
         report.setMeta(new CapacityReportMeta());
-        report.getMeta().setGranularity(granularity);
+
+        String granularityAsTitleCase = WordUtils.capitalizeFully(granularity.toString());
+
+        report.getMeta().setGranularity(
+            org.candlepin.subscriptions.utilization.api.model.Granularity.fromValue(granularityAsTitleCase));
         report.getMeta().setProduct(productId);
         report.getMeta().setCount(report.getData().size());
 
@@ -147,14 +147,8 @@ public class CapacityResource implements CapacityApi {
         Usage usage, Granularity granularity, @NotNull OffsetDateTime reportBegin,
         @NotNull OffsetDateTime reportEnd) {
 
-        List<SubscriptionCapacity> matches = repository.findByOwnerAndProductId(
-            ownerId,
-            productId,
-            sla,
-            usage,
-            reportBegin,
-            reportEnd
-        );
+        List<SubscriptionCapacity> matches = repository
+            .findByOwnerAndProductId(ownerId, productId, sla, usage, reportBegin, reportEnd);
 
         SnapshotTimeAdjuster timeAdjuster = SnapshotTimeAdjuster.getTimeAdjuster(clock, granularity);
 
@@ -201,20 +195,13 @@ public class CapacityResource implements CapacityApi {
             }
         }
 
-        return new CapacitySnapshot()
-            .date(date)
-            .sockets(sockets)
-            .physicalSockets(physicalSockets)
-            .hypervisorSockets(hypervisorSockets)
-            .cores(cores)
-            .physicalCores(physicalCores)
-            .hypervisorCores(hypervisorCores)
-            .hasInfiniteQuantity(false);
+        return new CapacitySnapshot().date(date).sockets(sockets).physicalSockets(physicalSockets)
+            .hypervisorSockets(hypervisorSockets).cores(cores).physicalCores(physicalCores)
+            .hypervisorCores(hypervisorCores).hasInfiniteQuantity(false);
     }
 
     private int sanitize(Integer value) {
         return value != null ? value : 0;
     }
-
 
 }

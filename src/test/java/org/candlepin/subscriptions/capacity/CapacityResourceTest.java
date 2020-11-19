@@ -18,12 +18,11 @@
  * granted to use or replicate Red Hat trademarks that are incorporated
  * in this software or its documentation.
  */
-package org.candlepin.subscriptions.resource;
+package org.candlepin.subscriptions.capacity;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import org.candlepin.subscriptions.capacity.CapacityResource;
 import org.candlepin.subscriptions.db.AccountListSource;
 import org.candlepin.subscriptions.db.SubscriptionCapacityRepository;
 import org.candlepin.subscriptions.db.model.ServiceLevel;
@@ -35,6 +34,7 @@ import org.candlepin.subscriptions.security.WithMockRedHatPrincipal;
 import org.candlepin.subscriptions.tally.AccountListSourceException;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReport;
 import org.candlepin.subscriptions.utilization.api.model.CapacitySnapshot;
+import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,16 +59,13 @@ class CapacityResourceTest {
 
     private final OffsetDateTime min = OffsetDateTime.now().minusDays(4);
     private final OffsetDateTime max = OffsetDateTime.now().plusDays(4);
-
+    private final org.candlepin.subscriptions.utilization.api.model.GranularityApiParam GRANULARITY_DAILY_PARAM = GranularityApiParam.DAILY;
     @MockBean
     SubscriptionCapacityRepository repository;
-
     @MockBean
     PageLinkCreator pageLinkCreator;
-
     @MockBean
     AccountListSource accountListSource;
-
     @Autowired
     CapacityResource resource;
 
@@ -83,25 +80,12 @@ class CapacityResourceTest {
         capacity.setBeginDate(min);
         capacity.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-                eq("owner123456"),
-                eq("product1"),
-                eq(ServiceLevel.ANY),
-                eq(Usage.ANY),
-                eq(min),
-                eq(max)))
-            .thenReturn(Collections.singletonList(capacity));
+        when(repository
+            .findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(ServiceLevel.ANY), eq(Usage.ANY),
+                eq(min), eq(max))).thenReturn(Collections.singletonList(capacity));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            null,
-            null,
-            null,
-            null
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
 
         assertEquals(9, report.getData().size());
     }
@@ -112,25 +96,11 @@ class CapacityResourceTest {
         capacity.setBeginDate(min);
         capacity.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-                eq("owner123456"),
-                eq("product1"),
-                eq(ServiceLevel.PREMIUM),
-                eq(Usage.ANY),
-                eq(min),
-                eq(max)))
-            .thenReturn(Collections.singletonList(capacity));
+        when(repository.findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(ServiceLevel.PREMIUM),
+            eq(Usage.ANY), eq(min), eq(max))).thenReturn(Collections.singletonList(capacity));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            null,
-            null,
-            "Premium",
-            null
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, "Premium", null);
 
         assertEquals(9, report.getData().size());
     }
@@ -141,25 +111,11 @@ class CapacityResourceTest {
         capacity.setBeginDate(min);
         capacity.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-            eq("owner123456"),
-            eq("product1"),
-            eq(ServiceLevel.ANY),
-            eq(Usage.PRODUCTION),
-            eq(min),
-            eq(max)))
-            .thenReturn(Collections.singletonList(capacity));
+        when(repository.findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(ServiceLevel.ANY),
+            eq(Usage.PRODUCTION), eq(min), eq(max))).thenReturn(Collections.singletonList(capacity));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            null,
-            null,
-            null,
-            "Production"
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, "Production");
 
         assertEquals(9, report.getData().size());
     }
@@ -170,25 +126,12 @@ class CapacityResourceTest {
         capacity.setBeginDate(min);
         capacity.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-                eq("owner123456"),
-                eq("product1"),
-                eq(ServiceLevel.ANY),
-                eq(Usage.ANY),
-                eq(min),
-                eq(max)))
-            .thenReturn(Collections.singletonList(capacity));
+        when(repository
+            .findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(ServiceLevel.ANY), eq(Usage.ANY),
+                eq(min), eq(max))).thenReturn(Collections.singletonList(capacity));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            null,
-            null,
-            "",
-            null
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, "", null);
 
         assertEquals(9, report.getData().size());
     }
@@ -199,25 +142,12 @@ class CapacityResourceTest {
         capacity.setBeginDate(min);
         capacity.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-            eq("owner123456"),
-            eq("product1"),
-            eq(ServiceLevel.ANY),
-            eq(Usage.ANY),
-            eq(min),
-            eq(max)))
-            .thenReturn(Collections.singletonList(capacity));
+        when(repository
+            .findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(ServiceLevel.ANY), eq(Usage.ANY),
+                eq(min), eq(max))).thenReturn(Collections.singletonList(capacity));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            null,
-            null,
-            null,
-            ""
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, "");
 
         assertEquals(9, report.getData().size());
     }
@@ -240,25 +170,12 @@ class CapacityResourceTest {
         capacity2.setBeginDate(min.truncatedTo(ChronoUnit.DAYS).minusSeconds(1));
         capacity2.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-                eq("owner123456"),
-                eq("product1"),
-                eq(null),
-                eq(null),
-                eq(min),
-                eq(max)))
+        when(repository
+            .findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(null), eq(null), eq(min), eq(max)))
             .thenReturn(Arrays.asList(capacity, capacity2));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            null,
-            null,
-            null,
-            null
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
 
         CapacitySnapshot capacitySnapshot = report.getData().get(0);
         assertEquals(12, capacitySnapshot.getHypervisorSockets().intValue());
@@ -269,33 +186,15 @@ class CapacityResourceTest {
 
     @Test
     void testShouldThrowExceptionOnBadOffset() {
-        SubscriptionsException e = assertThrows(SubscriptionsException.class, () ->
-            resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            11,
-            10,
-            null,
-            null)
-        );
+        SubscriptionsException e = assertThrows(SubscriptionsException.class, () -> resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, 11, 10, null, null));
         assertEquals(Response.Status.BAD_REQUEST, e.getStatus());
     }
 
     @Test
     void testShouldThrowBadRequestOnBadSla() {
-        BadRequestException e = assertThrows(BadRequestException.class, () ->
-            resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            0,
-            10,
-            "badSla",
-            null)
-        );
+        BadRequestException e = assertThrows(BadRequestException.class, () -> resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, 0, 10, "badSla", null));
     }
 
     @Test
@@ -304,25 +203,12 @@ class CapacityResourceTest {
         capacity.setBeginDate(min);
         capacity.setEndDate(max);
 
-        when(repository.findByOwnerAndProductId(
-                eq("owner123456"),
-                eq("product1"),
-                eq(ServiceLevel.ANY),
-                eq(Usage.ANY),
-                eq(min),
-                eq(max)))
-            .thenReturn(Collections.singletonList(capacity));
+        when(repository
+            .findByOwnerAndProductId(eq("owner123456"), eq("product1"), eq(ServiceLevel.ANY), eq(Usage.ANY),
+                eq(min), eq(max))).thenReturn(Collections.singletonList(capacity));
 
-        CapacityReport report = resource.getCapacityReport(
-            "product1",
-            "daily",
-            min,
-            max,
-            1,
-            1,
-            null,
-            null
-        );
+        CapacityReport report = resource
+            .getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, 1, 1, null, null);
 
         assertEquals(1, report.getData().size());
         assertEquals(OffsetDateTime.now().minusDays(3).truncatedTo(ChronoUnit.DAYS),
@@ -333,16 +219,7 @@ class CapacityResourceTest {
     @WithMockRedHatPrincipal("1111")
     public void testAccessDeniedWhenAccountIsNotWhitelisted() {
         assertThrows(AccessDeniedException.class, () -> {
-            resource.getCapacityReport(
-                "product1",
-                "daily",
-                min,
-                max,
-                null,
-                null,
-                null,
-                null
-            );
+            resource.getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
         });
     }
 
@@ -350,16 +227,7 @@ class CapacityResourceTest {
     @WithMockRedHatPrincipal(value = "123456", roles = {})
     public void testAccessDeniedWhenUserIsNotAnAdmin() {
         assertThrows(AccessDeniedException.class, () -> {
-            resource.getCapacityReport(
-                "product1",
-                "daily",
-                min,
-                max,
-                null,
-                null,
-                null,
-                null
-            );
+            resource.getCapacityReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
         });
     }
 }

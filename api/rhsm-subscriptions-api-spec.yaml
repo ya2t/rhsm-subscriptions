@@ -305,7 +305,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/GranularityApiParam'
           description: "The level of granularity to return."
         - name: sla
           in: query
@@ -375,7 +375,7 @@ paths:
                 meta:
                   count: 10
                   product: RHEL
-                  granularity: DAILY
+                  granularity: Daily
                   service_level: Premium
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -932,10 +932,11 @@ components:
             product:
               type: string
             granularity:
+              allOf:
+                - $ref: '#/components/schemas/Granularity'
               description: "Describes the significance of each date in the CapacitySnapshot list. For example if the
                 granularity is set to 'weekly', the dates in the CapacitySnapshot list will represent the start of a
                 seven day period."
-              type: string
             service_level:
               description: "Describes the service level that the report was made against. Not set if it wasn't
                 specified as a query parameter."
