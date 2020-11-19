@@ -54,7 +54,6 @@ import javax.ws.rs.core.UriInfo;
  * Tally API implementation.
  */
 @Component
-@Profile("api")
 public class TallyResource implements TallyApi {
 
     private final TallySnapshotRepository repository;
