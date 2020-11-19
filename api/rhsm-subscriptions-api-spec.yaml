@@ -183,7 +183,7 @@ paths:
           in: query
           required: true
           schema:
-            $ref: '#/components/schemas/Granularity'
+            $ref: '#/components/schemas/GranularityApiParam'
           description: "The level of granularity to return."
         - name: sla
           in: query
@@ -659,12 +659,11 @@ components:
   schemas:
     Granularity:
       type: string
-      enum:
-        - Daily
-        - Weekly
-        - Monthly
-        - Quarterly
-        - Yearly
+      enum: [ Daily, Weekly, Monthly, Quarterly, Yearly ]
+      x-enum-varnames: [ DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY ]
+    GranularityApiParam:
+      type: string
+      enum: [ DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY ]
     Uom:
       type: string
       enum:
@@ -1191,4 +1190,4 @@ components:
           type: string
 
 security:
-  - 3ScaleIdentity: []
+  - 3ScaleIdentity: [ ]

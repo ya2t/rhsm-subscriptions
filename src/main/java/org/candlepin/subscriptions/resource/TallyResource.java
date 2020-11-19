@@ -29,11 +29,13 @@ import org.candlepin.subscriptions.tally.filler.ReportFiller;
 import org.candlepin.subscriptions.tally.filler.ReportFillerFactory;
 import org.candlepin.subscriptions.util.ApplicationClock;
 import org.candlepin.subscriptions.utilization.api.model.Granularity;
+import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
 import org.candlepin.subscriptions.utilization.api.model.TallyReport;
 import org.candlepin.subscriptions.utilization.api.model.TallyReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.TallySnapshot;
 import org.candlepin.subscriptions.utilization.api.resources.TallyApi;
 
+import org.apache.commons.text.WordUtils;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,7 +73,7 @@ public class TallyResource implements TallyApi {
     @ReportingAccessRequired
     @SuppressWarnings("linelength")
     @Override
-    public TallyReport getTallyReport(String productId, @NotNull Granularity granularity,
+    public TallyReport getTallyReport(String productId, @NotNull GranularityApiParam granularity,
         @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
         // When limit and offset are not specified, we will fill the report with dummy
@@ -86,12 +88,12 @@ public class TallyResource implements TallyApi {
         ServiceLevel serviceLevel = ResourceUtils.sanitizeServiceLevel(sla);
         Usage effectiveUsage = ResourceUtils.sanitizeUsage(usage);
 
-        org.candlepin.subscriptions.db.model.Granularity granularityValue = org.candlepin.subscriptions.db.model.Granularity
+        org.candlepin.subscriptions.db.model.Granularity granularityFromValue = org.candlepin.subscriptions.db.model.Granularity
             .valueOf(granularity.toString().toUpperCase());
 
         Page<org.candlepin.subscriptions.db.model.TallySnapshot> snapshotPage = repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
-                accountNumber, productId, granularityValue, serviceLevel, effectiveUsage, beginning, ending,
+                accountNumber, productId, granularityFromValue, serviceLevel, effectiveUsage, beginning, ending,
                 pageable);
 
         List<TallySnapshot> snaps = snapshotPage.stream()
@@ -101,7 +103,10 @@ public class TallyResource implements TallyApi {
         TallyReport report = new TallyReport();
         report.setData(snaps);
         report.setMeta(new TallyReportMeta());
-        report.getMeta().setGranularity(granularity);
+
+        String granularityAsTitleCase = WordUtils.capitalizeFully(granularity.toString());
+
+        report.getMeta().setGranularity(Granularity.fromValue(granularityAsTitleCase));
         report.getMeta().setProduct(productId);
         report.getMeta().setServiceLevel(sla == null ? null : serviceLevel.getValue());
         report.getMeta().setUsage(usage == null ? null : effectiveUsage.getValue());
@@ -113,7 +118,7 @@ public class TallyResource implements TallyApi {
 
         // Fill the report gaps if no paging was requested.
         if (fill) {
-            ReportFiller reportFiller = ReportFillerFactory.getInstance(clock, granularityValue);
+            ReportFiller reportFiller = ReportFillerFactory.getInstance(clock, granularityFromValue);
             reportFiller.fillGaps(report, beginning, ending);
         }
 
@@ -122,5 +127,4 @@ public class TallyResource implements TallyApi {
 
         return report;
     }
-
 }
