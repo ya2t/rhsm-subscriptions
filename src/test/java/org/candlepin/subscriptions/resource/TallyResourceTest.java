@@ -21,7 +21,6 @@
 package org.candlepin.subscriptions.resource;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import org.candlepin.subscriptions.db.AccountListSource;
@@ -79,13 +78,11 @@ public class TallyResourceTest {
     @Autowired
     TallyResource resource;
 
-    private org.candlepin.subscriptions.utilization.api.model.GranularityApiParam granularityIncomingParam;
+    private final org.candlepin.subscriptions.utilization.api.model.GranularityApiParam GRANULARITY_DAILY_PARAM = GranularityApiParam.DAILY;
 
     @BeforeEach
     public void setupTests() throws AccountListSourceException {
         when(accountListSource.containsReportingAccount(eq("account123456"))).thenReturn(true);
-
-        granularityIncomingParam = GranularityApiParam.DAILY;
     }
 
     @Test
@@ -93,14 +90,14 @@ public class TallyResourceTest {
 
         TallySnapshot snap = new TallySnapshot();
 
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.ANY), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min), Mockito.eq(max),
                 Mockito.any(Pageable.class))).thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
         TallyReport report = resource
-            .getTallyReport("product1", granularityIncomingParam, min, max, 10, 10, null,
+            .getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10, null,
                 Usage.PRODUCTION.getValue());
         assertEquals(1, report.getData().size());
 
@@ -121,13 +118,13 @@ public class TallyResourceTest {
 
         TallySnapshot snap = new TallySnapshot();
 
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.PREMIUM), Mockito.eq(Usage.ANY), Mockito.eq(min), Mockito.eq(max),
                 Mockito.any(Pageable.class))).thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
-        TallyReport report = resource.getTallyReport("product1", granularityIncomingParam, min, max, 10, 10,
+        TallyReport report = resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10,
             ServiceLevel.PREMIUM.getValue(), null);
         assertEquals(1, report.getData().size());
 
@@ -147,14 +144,14 @@ public class TallyResourceTest {
     public void testUnsetSlaQueryParameter() {
         TallySnapshot snap = new TallySnapshot();
 
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.UNSPECIFIED), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
                 Mockito.eq(max), Mockito.any(Pageable.class)))
             .thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
-        TallyReport report = resource.getTallyReport("product1", granularityIncomingParam, min, max, 10, 10,
+        TallyReport report = resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10,
             ServiceLevel.UNSPECIFIED.getValue(), Usage.PRODUCTION.getValue());
         assertEquals(1, report.getData().size());
 
@@ -173,14 +170,14 @@ public class TallyResourceTest {
     public void testUnsetUsageQueryParameter() {
         TallySnapshot snap = new TallySnapshot();
 
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.PREMIUM), Mockito.eq(Usage.UNSPECIFIED), Mockito.eq(min),
                 Mockito.eq(max), Mockito.any(Pageable.class)))
             .thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
-        TallyReport report = resource.getTallyReport("product1", granularityIncomingParam, min, max, 10, 10,
+        TallyReport report = resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10,
             ServiceLevel.PREMIUM.getValue(), Usage.UNSPECIFIED.getValue());
         assertEquals(1, report.getData().size());
 
@@ -199,14 +196,14 @@ public class TallyResourceTest {
     public void testSetSlaAndUsageQueryParameters() {
         TallySnapshot snap = new TallySnapshot();
 
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.PREMIUM), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
                 Mockito.eq(max), Mockito.any(Pageable.class)))
             .thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
-        TallyReport report = resource.getTallyReport("product1", granularityIncomingParam, min, max, 10, 10,
+        TallyReport report = resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10,
             ServiceLevel.PREMIUM.getValue(), Usage.PRODUCTION.getValue());
         assertEquals(1, report.getData().size());
 
@@ -225,14 +222,14 @@ public class TallyResourceTest {
     public void testShouldUseQueryBasedOnHeaderAndParameters() throws Exception {
         TallySnapshot snap = new TallySnapshot();
 
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.PREMIUM), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
                 Mockito.eq(max), Mockito.any(Pageable.class)))
             .thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
-        TallyReport report = resource.getTallyReport("product1", granularityIncomingParam, min, max, 10, 10,
+        TallyReport report = resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10,
             ServiceLevel.PREMIUM.getValue(), Usage.PRODUCTION.getValue());
         assertEquals(1, report.getData().size());
 
@@ -345,21 +342,21 @@ public class TallyResourceTest {
     @Test
     public void testShouldThrowExceptionOnBadOffset() throws IOException {
         SubscriptionsException e = assertThrows(SubscriptionsException.class, () -> resource
-            .getTallyReport("product1", granularityIncomingParam, min, max, 11, 10,
+            .getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 11, 10,
                 ServiceLevel.PREMIUM.getValue(), Usage.PRODUCTION.getValue()));
         assertEquals(Response.Status.BAD_REQUEST, e.getStatus());
     }
 
     @Test
     public void reportDataShouldGetFilledWhenPagingParametersAreNotPassed() {
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.ANY), Mockito.eq(Usage.ANY), Mockito.eq(min), Mockito.eq(max),
                 Mockito.eq(null))).thenReturn(new PageImpl<>(Collections.emptyList()));
 
         TallyReport report = resource
-            .getTallyReport("product1", granularityIncomingParam, min, max, null, null, null, null);
+            .getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
 
         // Since nothing was returned from the DB, there should be one generated snapshot for each day
         // in the range.
@@ -386,21 +383,21 @@ public class TallyResourceTest {
     public void ensureBadRequestExceptionIsThrownWhenAnInvalidSlaParameterIsSpecified() {
         assertThrows(BadRequestException.class, () -> {
             resource
-                .getTallyReport("product1", granularityIncomingParam, min, max, null, null, "foo_sla", null);
+                .getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, "foo_sla", null);
         });
     }
 
     @Test
     @WithMockRedHatPrincipal(value = "123456", roles = { "ROLE_" + RoleProvider.SWATCH_ADMIN_ROLE })
     public void canReportWithOnlyReportingRole() {
-        Mockito.when(repository
+        when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
                 Mockito.eq(ServiceLevel.ANY), Mockito.eq(Usage.ANY), Mockito.eq(min), Mockito.eq(max),
                 Mockito.eq(null))).thenReturn(new PageImpl<>(Collections.emptyList()));
 
         TallyReport report = resource
-            .getTallyReport("product1", granularityIncomingParam, min, max, null, null, null, null);
+            .getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
         assertNotNull(report);
     }
 
@@ -408,7 +405,7 @@ public class TallyResourceTest {
     @WithMockRedHatPrincipal("1111")
     public void testAccessDeniedWhenAccountIsNotWhitelisted() {
         assertThrows(AccessDeniedException.class, () -> {
-            resource.getTallyReport("product1", granularityIncomingParam, min, max, null, null, null, null);
+            resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
         });
     }
 
@@ -416,7 +413,7 @@ public class TallyResourceTest {
     @WithMockRedHatPrincipal(value = "123456", roles = {})
     public void testAccessDeniedWhenUserIsNotAnAdmin() {
         assertThrows(AccessDeniedException.class, () -> {
-            resource.getTallyReport("product1", granularityIncomingParam, min, max, null, null, null, null);
+            resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, null, null, null, null);
         });
     }
 

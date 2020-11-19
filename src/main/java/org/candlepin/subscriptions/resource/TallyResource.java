@@ -36,7 +36,6 @@ import org.candlepin.subscriptions.utilization.api.model.TallySnapshot;
 import org.candlepin.subscriptions.utilization.api.resources.TallyApi;
 
 import org.apache.commons.text.WordUtils;
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -92,8 +91,8 @@ public class TallyResource implements TallyApi {
 
         Page<org.candlepin.subscriptions.db.model.TallySnapshot> snapshotPage = repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
-                accountNumber, productId, granularityFromValue, serviceLevel, effectiveUsage, beginning, ending,
-                pageable);
+                accountNumber, productId, granularityFromValue, serviceLevel, effectiveUsage, beginning,
+                ending, pageable);
 
         List<TallySnapshot> snaps = snapshotPage.stream()
             .map(org.candlepin.subscriptions.db.model.TallySnapshot::asApiSnapshot)
