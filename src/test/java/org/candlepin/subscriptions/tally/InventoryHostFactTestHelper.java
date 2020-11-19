@@ -77,7 +77,7 @@ public class InventoryHostFactTestHelper {
 
     public static InventoryHostFacts createRhsmHost(String account, String orgId, String products,
         Integer cores, Integer sockets, String syspurposeRole, OffsetDateTime syncTimeStamp) {
-        return createRhsmHost(account, orgId, products, ServiceLevel.UNSPECIFIED, cores, sockets,
+        return createRhsmHost(account, orgId, products, ServiceLevel.EMPTY, cores, sockets,
             syspurposeRole, syncTimeStamp);
     }
 

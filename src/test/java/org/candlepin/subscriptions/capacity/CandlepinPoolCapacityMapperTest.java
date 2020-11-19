@@ -130,7 +130,7 @@ class CandlepinPoolCapacityMapperTest {
         expectedRhelCapacity.setBeginDate(LONG_AGO);
         expectedRhelCapacity.setEndDate(NOWISH);
         expectedRhelCapacity.setSubscriptionId("subId");
-        expectedRhelCapacity.setServiceLevel(ServiceLevel.UNSPECIFIED);
+        expectedRhelCapacity.setServiceLevel(ServiceLevel.EMPTY);
         expectedRhelCapacity.setUsage(Usage.UNSPECIFIED);
         expectedRhelCapacity.setOwnerId("ownerId");
 
@@ -143,7 +143,7 @@ class CandlepinPoolCapacityMapperTest {
         expectedServerCapacity.setEndDate(NOWISH);
         expectedServerCapacity.setSubscriptionId("subId");
         expectedServerCapacity.setOwnerId("ownerId");
-        expectedServerCapacity.setServiceLevel(ServiceLevel.UNSPECIFIED);
+        expectedServerCapacity.setServiceLevel(ServiceLevel.EMPTY);
         expectedServerCapacity.setUsage(Usage.UNSPECIFIED);
 
         assertThat(capacities, Matchers.containsInAnyOrder(

@@ -41,7 +41,7 @@ public class NormalizedFacts {
     public static final String OWNER_KEY = "owner";
 
     private Set<String> products;
-    private ServiceLevel sla = ServiceLevel.UNSPECIFIED;
+    private ServiceLevel sla = ServiceLevel.EMPTY;
     private Usage usage = Usage.UNSPECIFIED;
     private Integer cores;
     private Integer sockets;

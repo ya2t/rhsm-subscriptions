@@ -301,7 +301,7 @@ class SubscriptionCapacityRepositoryTest {
         standard.setSubscriptionId("standard");
         standard.setServiceLevel(ServiceLevel.STANDARD);
         unset.setSubscriptionId("unset");
-        unset.setServiceLevel(ServiceLevel.UNSPECIFIED);
+        unset.setServiceLevel(ServiceLevel.EMPTY);
         repository.saveAll(Arrays.asList(premium, standard, unset));
         repository.flush();
 
@@ -325,19 +325,19 @@ class SubscriptionCapacityRepositoryTest {
         standard.setSubscriptionId("standard");
         standard.setServiceLevel(ServiceLevel.STANDARD);
         unset.setSubscriptionId("unset");
-        unset.setServiceLevel(ServiceLevel.UNSPECIFIED);
+        unset.setServiceLevel(ServiceLevel.EMPTY);
         repository.saveAll(Arrays.asList(premium, standard, unset));
         repository.flush();
 
         List<SubscriptionCapacity> found = repository.findByOwnerAndProductId(
             "ownerId",
             "product",
-            ServiceLevel.UNSPECIFIED,
+            ServiceLevel.EMPTY,
             Usage.PRODUCTION,
             NOWISH,
             FAR_FUTURE);
         assertEquals(1, found.size());
-        assertEquals(ServiceLevel.UNSPECIFIED, found.get(0).getServiceLevel());
+        assertEquals(ServiceLevel.EMPTY, found.get(0).getServiceLevel());
     }
 
     @Test
@@ -350,7 +350,7 @@ class SubscriptionCapacityRepositoryTest {
         standard.setSubscriptionId("standard");
         standard.setServiceLevel(ServiceLevel.STANDARD);
         unset.setSubscriptionId("unset");
-        unset.setServiceLevel(ServiceLevel.UNSPECIFIED);
+        unset.setServiceLevel(ServiceLevel.EMPTY);
         repository.saveAll(Arrays.asList(premium, standard, unset));
         repository.flush();
 

@@ -34,7 +34,7 @@ import javax.persistence.Converter;
  * system to associate it with a specific SLA requirement.
  */
 public enum ServiceLevel {
-    UNSPECIFIED(""),
+    EMPTY(""),
     PREMIUM("Premium"),
     STANDARD("Standard"),
     SELF_SUPPORT("Self-Support"),
@@ -62,7 +62,7 @@ public enum ServiceLevel {
      */
     public static ServiceLevel fromString(String value) {
         String key = value == null ? "" : value.toUpperCase();
-        return VALUE_ENUM_MAP.getOrDefault(key, UNSPECIFIED);
+        return VALUE_ENUM_MAP.getOrDefault(key, EMPTY);
     }
 
     /**

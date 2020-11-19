@@ -267,7 +267,7 @@ public class FactNormalizer {
 
     private ServiceLevel extractRhsmSla(InventoryHostFacts hostFacts) {
         ServiceLevel effectiveSla = ServiceLevel.fromString(hostFacts.getSyspurposeSla());
-        if (hostFacts.getSyspurposeSla() != null && effectiveSla == ServiceLevel.UNSPECIFIED &&
+        if (hostFacts.getSyspurposeSla() != null && effectiveSla == ServiceLevel.EMPTY &&
             log.isDebugEnabled()) {
 
             log.debug(

@@ -177,7 +177,7 @@ public class ResourceUtils {
         ServiceLevel sanitizedSla = ServiceLevel.fromString(sla);
         // If the sla parameter is not one that we support, then throw an exception.
         // If we don't, the query would default to UNSPECIFIED, which would be confusing.
-        if (StringUtils.hasLength(sla) && sanitizedSla == ServiceLevel.UNSPECIFIED) {
+        if (StringUtils.hasLength(sla) && sanitizedSla == ServiceLevel.EMPTY) {
             throw new BadRequestException("Invalid sla parameter specified.");
         }
         return sanitizedSla;

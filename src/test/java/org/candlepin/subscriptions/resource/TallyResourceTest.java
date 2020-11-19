@@ -147,19 +147,19 @@ public class TallyResourceTest {
         when(repository
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
-                Mockito.eq(ServiceLevel.UNSPECIFIED), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
+                Mockito.eq(ServiceLevel.EMPTY), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
                 Mockito.eq(max), Mockito.any(Pageable.class)))
             .thenReturn(new PageImpl<>(Arrays.asList(snap)));
 
         TallyReport report = resource.getTallyReport("product1", GRANULARITY_DAILY_PARAM, min, max, 10, 10,
-            ServiceLevel.UNSPECIFIED.getValue(), Usage.PRODUCTION.getValue());
+            ServiceLevel.EMPTY.getValue(), Usage.PRODUCTION.getValue());
         assertEquals(1, report.getData().size());
 
         Pageable expectedPageable = PageRequest.of(1, 10);
         Mockito.verify(repository)
             .findByAccountNumberAndProductIdAndGranularityAndServiceLevelAndUsageAndSnapshotDateBetweenOrderBySnapshotDate(
                 Mockito.eq("account123456"), Mockito.eq("product1"), Mockito.eq(Granularity.DAILY),
-                Mockito.eq(ServiceLevel.UNSPECIFIED), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
+                Mockito.eq(ServiceLevel.EMPTY), Mockito.eq(Usage.PRODUCTION), Mockito.eq(min),
                 Mockito.eq(max), Mockito.eq(expectedPageable));
 
         assertMetadata(report.getMeta(), "product1", "", Usage.PRODUCTION.getValue(),

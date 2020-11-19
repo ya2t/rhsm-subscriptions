@@ -664,6 +664,9 @@ components:
     GranularityApiParam:
       type: string
       enum: [ DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY ]
+    ServiceLevel:
+      type: string
+      enum: [Premium, Standard, Self-Support, _ANY, ""]
     Uom:
       type: string
       enum:

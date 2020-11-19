@@ -178,13 +178,13 @@ public class CandlepinPoolCapacityMapper {
 
         if (sla.isPresent()) {
             ServiceLevel slaValue = ServiceLevel.fromString(sla.get());
-            if (slaValue == ServiceLevel.UNSPECIFIED) {
+            if (slaValue == ServiceLevel.EMPTY) {
                 log.warn("Product {} has unsupported service level {}", pool.getProductId(), sla.get());
             }
             return slaValue;
         }
 
-        return ServiceLevel.UNSPECIFIED;
+        return ServiceLevel.EMPTY;
     }
 
     private Usage getUsage(CandlepinPool pool) {

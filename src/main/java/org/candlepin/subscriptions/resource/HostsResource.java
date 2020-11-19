@@ -56,21 +56,15 @@ import javax.ws.rs.core.UriInfo;
 @Component
 public class HostsResource implements HostsApi {
 
-    public static final Map<HostReportSort, String> SORT_PARAM_MAPPING =
-        ImmutableMap.<HostReportSort, String>builderWithExpectedSize(5)
-        .put(HostReportSort.DISPLAY_NAME, "key.host.displayName")
-        .put(HostReportSort.CORES, "cores")
-        .put(HostReportSort.HARDWARE_TYPE, "key.host.hardwareType")
-        .put(HostReportSort.SOCKETS, "sockets")
+    public static final Map<HostReportSort, String> SORT_PARAM_MAPPING = ImmutableMap.<HostReportSort, String>builderWithExpectedSize(
+        5).put(HostReportSort.DISPLAY_NAME, "key.host.displayName").put(HostReportSort.CORES, "cores")
+        .put(HostReportSort.HARDWARE_TYPE, "key.host.hardwareType").put(HostReportSort.SOCKETS, "sockets")
         .put(HostReportSort.LAST_SEEN, "key.host.lastSeen")
-        .put(HostReportSort.MEASUREMENT_TYPE, "measurementType")
-        .build();
-
-    @Context
-    UriInfo uriInfo;
-
+        .put(HostReportSort.MEASUREMENT_TYPE, "measurementType").build();
     private final HostRepository repository;
     private final PageLinkCreator pageLinkCreator;
+    @Context
+    UriInfo uriInfo;
 
     public HostsResource(HostRepository repository, PageLinkCreator pageLinkCreator) {
         this.repository = repository;
@@ -79,8 +73,8 @@ public class HostsResource implements HostsApi {
 
     @Override
     @ReportingAccessRequired
-    public HostReport getHosts(String productId, Integer offset, Integer limit, String sla,
-        String usage, Uom uom, HostReportSort sort, SortDirection dir) {
+    public HostReport getHosts(String productId, Integer offset, Integer limit, String sla, String usage,
+        Uom uom, HostReportSort sort, SortDirection dir) {
 
         Sort.Direction dirValue = Sort.Direction.ASC;
         if (dir == SortDirection.DESC) {
@@ -107,15 +101,9 @@ public class HostsResource implements HostsApi {
         ServiceLevel sanitizedSla = ResourceUtils.sanitizeServiceLevel(sla);
         Usage sanitizedUsage = ResourceUtils.sanitizeUsage(usage);
         Pageable page = ResourceUtils.getPageable(offset, limit, sortValue);
-        Page<TallyHostView> hosts = repository.getTallyHostViews(
-            accountNumber,
-            productId,
-            sanitizedSla,
-            sanitizedUsage,
-            minCores,
-            minSockets,
-            page
-        );
+        Page<TallyHostView> hosts = repository
+            .getTallyHostViews(accountNumber, productId, sanitizedSla, sanitizedUsage, minCores, minSockets,
+                page);
 
         TallyReportLinks links;
         if (offset != null || limit != null) {
@@ -125,16 +113,9 @@ public class HostsResource implements HostsApi {
             links = null;
         }
 
-        return new HostReport()
-            .links(links)
-            .meta(
-                new HostReportMeta()
-                    .count((int) hosts.getTotalElements())
-                    .product(productId)
-                    .serviceLevel(sla)
-                    .usage(usage)
-                    .uom(uom)
-            )
+        return new HostReport().links(links).meta(
+            new HostReportMeta().count((int) hosts.getTotalElements()).product(productId).serviceLevel(sla)
+                .usage(usage).uom(uom))
             .data(hosts.getContent().stream().map(TallyHostView::asApiHost).collect(Collectors.toList()));
     }
 
@@ -152,12 +133,8 @@ public class HostsResource implements HostsApi {
             links = null;
         }
 
-        return new HypervisorGuestReport()
-            .links(links)
-            .meta(
-                new HypervisorGuestReportMeta()
-                    .count((int) guests.getTotalElements())
-            )
+        return new HypervisorGuestReport().links(links)
+            .meta(new HypervisorGuestReportMeta().count((int) guests.getTotalElements()))
             .data(guests.getContent().stream().map(Host::asApiHost).collect(Collectors.toList()));
     }
 }

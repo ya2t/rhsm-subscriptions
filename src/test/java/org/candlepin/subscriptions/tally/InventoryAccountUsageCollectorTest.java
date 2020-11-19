@@ -261,11 +261,11 @@ public class InventoryAccountUsageCollectorTest {
         List<String> targetAccounts = Collections.singletonList("A1");
 
         InventoryHostFacts host1 = createRhsmHost("A1", "O1",
-            TEST_PRODUCT_ID.toString(), ServiceLevel.UNSPECIFIED, Usage.DEVELOPMENT_TEST, 6, 6, "",
+            TEST_PRODUCT_ID.toString(), ServiceLevel.EMPTY, Usage.DEVELOPMENT_TEST, 6, 6, "",
             OffsetDateTime.now());
 
         InventoryHostFacts host2 = createRhsmHost("A1", "O1",
-            TEST_PRODUCT_ID.toString(), ServiceLevel.UNSPECIFIED, Usage.PRODUCTION, 10, 10, "",
+            TEST_PRODUCT_ID.toString(), ServiceLevel.EMPTY, Usage.PRODUCTION, 10, 10, "",
             OffsetDateTime.now());
 
         mockReportedHypervisors(targetAccounts, new HashMap<>());
@@ -279,10 +279,10 @@ public class InventoryAccountUsageCollectorTest {
         AccountUsageCalculation a1Calc = calcs.get("A1");
         assertEquals(1, a1Calc.getProducts().size());
         checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", 16, 16, 2);
-        checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", ServiceLevel.UNSPECIFIED, Usage.ANY, 16, 16, 2);
-        checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", ServiceLevel.UNSPECIFIED, Usage.DEVELOPMENT_TEST,
+        checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", ServiceLevel.EMPTY, Usage.ANY, 16, 16, 2);
+        checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", ServiceLevel.EMPTY, Usage.DEVELOPMENT_TEST,
             6, 6, 1);
-        checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", ServiceLevel.UNSPECIFIED, Usage.PRODUCTION,
+        checkTotalsCalculation(a1Calc, "A1", "O1", "RHEL", ServiceLevel.EMPTY, Usage.PRODUCTION,
             10, 10, 1);
     }
 
