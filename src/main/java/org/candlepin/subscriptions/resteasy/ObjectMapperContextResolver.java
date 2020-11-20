@@ -22,6 +22,7 @@ package org.candlepin.subscriptions.resteasy;
 
 import org.candlepin.subscriptions.ApplicationProperties;
 import org.candlepin.subscriptions.utilization.api.model.Granularity;
+import org.candlepin.subscriptions.utilization.api.model.ServiceLevel;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -43,6 +44,7 @@ public class ObjectMapperContextResolver implements ContextResolver<ObjectMapper
 
     private final ObjectMapper objectMapper;
 
+
     public ObjectMapperContextResolver(ApplicationProperties applicationProperties) {
         objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -56,9 +58,9 @@ public class ObjectMapperContextResolver implements ContextResolver<ObjectMapper
         objectMapper.findAndRegisterModules();
 
         SimpleModule module = new SimpleModule();
-
-        module.addDeserializer(Granularity.class, new TitleCaseEnumDeserializer());
-        module.addSerializer(Granularity.class, new TitlecaseEnumSerializer());
+        TitlecaseSerializer titlecaseSerializer = new TitlecaseSerializer();
+        module.addSerializer(Granularity.class, titlecaseSerializer);
+        module.addSerializer(ServiceLevel.class, titlecaseSerializer);
 
         objectMapper.registerModule(module);
     }

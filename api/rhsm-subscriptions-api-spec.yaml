@@ -660,7 +660,6 @@ components:
     Granularity:
       type: string
       enum: [ DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY ]
-      x-enum-varnames: [ DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY ]
     GranularityApiParam:
       type: string
       enum: [ DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY ]

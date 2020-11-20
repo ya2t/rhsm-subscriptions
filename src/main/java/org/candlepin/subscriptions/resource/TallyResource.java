@@ -103,12 +103,7 @@ public class TallyResource implements TallyApi {
         TallyReport report = new TallyReport();
         report.setData(snaps);
         report.setMeta(new TallyReportMeta());
-
-        String granularityAsTitleCase = granularity.toString().toUpperCase();
-
-            //WordUtils.capitalizeFully(granularity.toString());
-
-        report.getMeta().setGranularity(Granularity.fromValue(granularityAsTitleCase));
+        report.getMeta().setGranularity(Granularity.fromValue(granularity.toString().toUpperCase()));
         report.getMeta().setProduct(productId);
         report.getMeta().setServiceLevel(sla == null ? null : serviceLevel.getValue());
         report.getMeta().setUsage(usage == null ? null : effectiveUsage.getValue());
