@@ -267,7 +267,6 @@ project(":api") {
           generatePom: false,
           dateLibrary: "java8",
       ]
-        templateDir = "${projectDir}/src/main/resources/templates"
     }
 
     openApiValidate {
