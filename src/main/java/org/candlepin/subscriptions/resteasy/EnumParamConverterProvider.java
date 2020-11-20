@@ -57,6 +57,7 @@ public class EnumParamConverterProvider implements ParamConverterProvider {
         private final Class<T> clazz;
 
         public EnumParamConverter(Class<T> clazz) {
+
             this.clazz = clazz;
             for (T value : clazz.getEnumConstants()) {
                 String stringValue = value.toString();
@@ -66,6 +67,14 @@ public class EnumParamConverterProvider implements ParamConverterProvider {
 
         @Override
         public T fromString(String value) {
+
+            /*
+            TODO
+            option: could put logic here that says "hey if class is any of these enums (or all enums I
+            suppose)",
+            compare strings ignoring case to find a map value
+            */
+
             if (value == null) {
                 return null;
             }

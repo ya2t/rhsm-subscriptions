@@ -21,11 +21,13 @@
 package org.candlepin.subscriptions.resteasy;
 
 import org.candlepin.subscriptions.ApplicationProperties;
+import org.candlepin.subscriptions.utilization.api.model.Granularity;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 
 import javax.ws.rs.ext.ContextResolver;
@@ -48,6 +50,10 @@ public class ObjectMapperContextResolver implements ContextResolver<ObjectMapper
         objectMapper.configure(SerializationFeature.INDENT_OUTPUT, applicationProperties.isPrettyPrintJson());
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(Granularity.class, new TitleCaseEnumDeserializer());
+        objectMapper.registerModule(module);
 
         // Tell the mapper to check the classpath for any serialization/deserialization modules
         // such as the Java8 date/time module (JavaTimeModule).
