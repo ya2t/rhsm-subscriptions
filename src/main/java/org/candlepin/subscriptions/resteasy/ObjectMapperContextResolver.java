@@ -44,7 +44,6 @@ public class ObjectMapperContextResolver implements ContextResolver<ObjectMapper
 
     private final ObjectMapper objectMapper;
 
-
     public ObjectMapperContextResolver(ApplicationProperties applicationProperties) {
         objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -61,7 +60,6 @@ public class ObjectMapperContextResolver implements ContextResolver<ObjectMapper
         TitlecaseSerializer titlecaseSerializer = new TitlecaseSerializer();
         module.addSerializer(Granularity.class, titlecaseSerializer);
         module.addSerializer(ServiceLevel.class, titlecaseSerializer);
-
         objectMapper.registerModule(module);
     }
 
