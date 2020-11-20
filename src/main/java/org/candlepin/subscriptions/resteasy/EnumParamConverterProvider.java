@@ -20,7 +20,8 @@
  */
 package org.candlepin.subscriptions.resteasy;
 
-import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
+import org.candlepin.subscriptions.utilization.api.model.Granularity;
+import org.candlepin.subscriptions.utilization.api.model.ServiceLevel;
 
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
@@ -42,7 +46,7 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class EnumParamConverterProvider implements ParamConverterProvider {
 
-    private final List<Class<?>> caseInsensitiveParams = Arrays.asList(GranularityApiParam.class);
+    private final List<Class<?>> caseInsensitiveParams = Arrays.asList(Granularity.class, ServiceLevel.class);
 
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType, Annotation[] annotations) {
@@ -96,39 +100,39 @@ public class EnumParamConverterProvider implements ParamConverterProvider {
 
     public static class CaseInsensitiveEnumParamConverter<T> implements ParamConverter<T> {
 
-        private final Map<String, T> stringValueMap = new HashMap<>();
-        private final Class<T> clazz;
+        private final Class<T> className;
+        private Map<String, T> keyValuePairs = new HashMap<>();
 
-        public CaseInsensitiveEnumParamConverter(Class<T> clazz) {
-            this.clazz = clazz;
-            for (T value : clazz.getEnumConstants()) {
-                String stringValue = value.toString();
-                stringValueMap.put(stringValue, value);
+        public CaseInsensitiveEnumParamConverter(Class<T> className) {
+            this.className = className;
+
+            if (Objects.nonNull(className.getEnumConstants())) {
+                keyValuePairs = Arrays.stream(className.getEnumConstants())
+                    .collect(Collectors.toMap(T::toString, value -> value));
             }
         }
 
         @Override
         public T fromString(String value) {
 
-            System.err.println("this enum is case insensitive");
-
-            System.err.println(stringValueMap);
-
-            if (value == null) {
+            if (Objects.isNull(value)) {
                 return null;
             }
-            if (stringValueMap.containsKey(value)) {
-                return stringValueMap.get(value);
+
+            Optional<Map.Entry<String, T>> result = keyValuePairs.entrySet().stream()
+                .filter(kv -> value.equalsIgnoreCase(kv.getKey())).findFirst();
+
+            if (result.isPresent()) {
+                return result.get().getValue();
             }
-            throw new IllegalArgumentException(String.format("%s is not a valid value for %s", value, clazz));
+
+            throw new IllegalArgumentException(
+                String.format("%s is not a valid value for %s", value, className));
         }
 
         @Override
         public String toString(T value) {
-            if (value == null) {
-                return null;
-            }
-            return value.toString();
+            return Objects.nonNull(value) ? value.toString() : null;
         }
     }
 }
