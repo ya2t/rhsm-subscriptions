@@ -20,11 +20,15 @@
  */
 package org.candlepin.subscriptions.resteasy;
 
+import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
+
 import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.ext.ParamConverter;
@@ -38,12 +42,17 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class EnumParamConverterProvider implements ParamConverterProvider {
 
+    private final List<Class<?>> caseInsensitiveParams = Arrays.asList(GranularityApiParam.class);
+
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType, Annotation[] annotations) {
         if (!rawType.isEnum()) {
             return null;
         }
-        return new EnumParamConverter<>(rawType);
+
+        return caseInsensitiveParams.contains(rawType) ?
+            new CaseInsensitiveEnumParamConverter<>(rawType) :
+            new EnumParamConverter<>(rawType);
     }
 
     /**
@@ -67,13 +76,43 @@ public class EnumParamConverterProvider implements ParamConverterProvider {
 
         @Override
         public T fromString(String value) {
+            if (value == null) {
+                return null;
+            }
+            if (stringValueMap.containsKey(value)) {
+                return stringValueMap.get(value);
+            }
+            throw new IllegalArgumentException(String.format("%s is not a valid value for %s", value, clazz));
+        }
 
-            /*
-            TODO
-            option: could put logic here that says "hey if class is any of these enums (or all enums I
-            suppose)",
-            compare strings ignoring case to find a map value
-            */
+        @Override
+        public String toString(T value) {
+            if (value == null) {
+                return null;
+            }
+            return value.toString();
+        }
+    }
+
+    public static class CaseInsensitiveEnumParamConverter<T> implements ParamConverter<T> {
+
+        private final Map<String, T> stringValueMap = new HashMap<>();
+        private final Class<T> clazz;
+
+        public CaseInsensitiveEnumParamConverter(Class<T> clazz) {
+            this.clazz = clazz;
+            for (T value : clazz.getEnumConstants()) {
+                String stringValue = value.toString();
+                stringValueMap.put(stringValue, value);
+            }
+        }
+
+        @Override
+        public T fromString(String value) {
+
+            System.err.println("this enum is case insensitive");
+
+            System.err.println(stringValueMap);
 
             if (value == null) {
                 return null;

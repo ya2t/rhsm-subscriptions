@@ -35,7 +35,6 @@ import org.candlepin.subscriptions.utilization.api.model.TallyReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.TallySnapshot;
 import org.candlepin.subscriptions.utilization.api.resources.TallyApi;
 
-import org.apache.commons.text.WordUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -74,6 +73,9 @@ public class TallyResource implements TallyApi {
     public TallyReport getTallyReport(String productId, @NotNull GranularityApiParam granularity,
         @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
+
+        System.err.println("Starting tally report logic");
+
         // When limit and offset are not specified, we will fill the report with dummy
         // records from beginning to ending dates. Otherwise we page as usual.
         Pageable pageable = null;
@@ -102,7 +104,9 @@ public class TallyResource implements TallyApi {
         report.setData(snaps);
         report.setMeta(new TallyReportMeta());
 
-        String granularityAsTitleCase = WordUtils.capitalizeFully(granularity.toString());
+        String granularityAsTitleCase = granularity.toString().toUpperCase();
+
+            //WordUtils.capitalizeFully(granularity.toString());
 
         report.getMeta().setGranularity(Granularity.fromValue(granularityAsTitleCase));
         report.getMeta().setProduct(productId);
@@ -123,6 +127,7 @@ public class TallyResource implements TallyApi {
         // Set the count last since the report may have gotten filled.
         report.getMeta().setCount(report.getData().size());
 
+        System.err.println("about to return");
         return report;
     }
 }

@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
 import java.io.IOException;
 
+import javax.ws.rs.ext.Provider;
+
+@Provider
 public class TitleCaseEnumDeserializer extends StdDeserializer<Granularity> {
 
     public TitleCaseEnumDeserializer() {
@@ -23,7 +26,9 @@ public class TitleCaseEnumDeserializer extends StdDeserializer<Granularity> {
     public Granularity deserialize(JsonParser p, DeserializationContext ctxt)
         throws IOException, JsonProcessingException {
 
-        System.out.println("Lindsey was here!");
+
+
+        System.err.println("I'm a deserializer!");
 
         return null;
     }

@@ -35,14 +35,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Configuration of Resteasy.
- *
+ * <p>
  * Should be imported by any component that needs to serve an API.
  */
 @Configuration
 @Import(ResteasyAutoConfiguration.class)
-@ComponentScan(basePackages = {"org.candlepin.subscriptions.exception.mapper",
-    "org.candlepin.subscriptions.resteasy"})
+@ComponentScan(basePackages = { "org.candlepin.subscriptions.exception.mapper",
+    "org.candlepin.subscriptions.resteasy" })
 public class ResteasyConfiguration implements WebMvcConfigurer {
+
+    @Bean
+    public static BeanFactoryPostProcessor servletInitializer() {
+        return new JaxrsApplicationServletInitializer();
+    }
+
     @Bean
     @Primary
     public ObjectMapperContextResolver objectMapperContextResolver(
@@ -50,10 +56,7 @@ public class ResteasyConfiguration implements WebMvcConfigurer {
         return new ObjectMapperContextResolver(applicationProperties);
     }
 
-    @Bean
-    public static BeanFactoryPostProcessor servletInitializer() {
-        return new JaxrsApplicationServletInitializer();
-    }
+
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
@@ -63,9 +66,7 @@ public class ResteasyConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/api-docs/openapi.*").addResourceLocations(
-            "classpath:openapi.yaml",
-            "classpath:openapi.json"
-        );
+        registry.addResourceHandler("/api-docs/openapi.*")
+            .addResourceLocations("classpath:openapi.yaml", "classpath:openapi.json");
     }
 }

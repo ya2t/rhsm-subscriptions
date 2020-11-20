@@ -51,13 +51,16 @@ public class ObjectMapperContextResolver implements ContextResolver<ObjectMapper
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(Granularity.class, new TitleCaseEnumDeserializer());
-        objectMapper.registerModule(module);
-
         // Tell the mapper to check the classpath for any serialization/deserialization modules
         // such as the Java8 date/time module (JavaTimeModule).
         objectMapper.findAndRegisterModules();
+
+        SimpleModule module = new SimpleModule();
+
+        module.addDeserializer(Granularity.class, new TitleCaseEnumDeserializer());
+        module.addSerializer(Granularity.class, new TitlecaseEnumSerializer());
+
+        objectMapper.registerModule(module);
     }
 
     @Override
