@@ -28,6 +28,7 @@ package org.candlepin.subscriptions.db.model;
  * tallies were 2, 3, 4, 5, 6, 2, 4, the weekly tally snapshot would be 6.
  */
 public enum Granularity {
+    HOURLY,
     DAILY,
     WEEKLY,
     MONTHLY,
