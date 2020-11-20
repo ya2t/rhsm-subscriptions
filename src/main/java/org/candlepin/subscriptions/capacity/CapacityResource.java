@@ -21,7 +21,6 @@
 package org.candlepin.subscriptions.capacity;
 
 import org.candlepin.subscriptions.db.SubscriptionCapacityRepository;
-import org.candlepin.subscriptions.db.model.Granularity;
 import org.candlepin.subscriptions.db.model.ServiceLevel;
 import org.candlepin.subscriptions.db.model.SubscriptionCapacity;
 import org.candlepin.subscriptions.db.model.Usage;
@@ -33,11 +32,10 @@ import org.candlepin.subscriptions.util.SnapshotTimeAdjuster;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReport;
 import org.candlepin.subscriptions.utilization.api.model.CapacityReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.CapacitySnapshot;
-import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
+import org.candlepin.subscriptions.utilization.api.model.Granularity;
 import org.candlepin.subscriptions.utilization.api.model.TallyReportLinks;
 import org.candlepin.subscriptions.utilization.api.resources.CapacityApi;
 
-import org.apache.commons.text.WordUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -72,9 +70,9 @@ public class CapacityResource implements CapacityApi {
         this.clock = clock;
     }
 
-    @Override
     @ReportingAccessRequired
-    public CapacityReport getCapacityReport(String productId, @NotNull GranularityApiParam granularity,
+    @Override
+    public CapacityReport getCapacityReport(String productId, @NotNull Granularity granularity,
         @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
 
@@ -113,11 +111,8 @@ public class CapacityResource implements CapacityApi {
         CapacityReport report = new CapacityReport();
         report.setData(data);
         report.setMeta(new CapacityReportMeta());
-
-        String granularityAsTitleCase = WordUtils.capitalizeFully(granularity.toString());
-
-        report.getMeta().setGranularity(
-            org.candlepin.subscriptions.utilization.api.model.Granularity.fromValue(granularityAsTitleCase));
+        report.getMeta().setGranularity(org.candlepin.subscriptions.utilization.api.model.Granularity
+            .fromValue(granularityFromValue.toString()));
         report.getMeta().setProduct(productId);
         report.getMeta().setCount(report.getData().size());
 
@@ -144,8 +139,8 @@ public class CapacityResource implements CapacityApi {
     }
 
     private List<CapacitySnapshot> getCapacities(String ownerId, String productId, ServiceLevel sla,
-        Usage usage, Granularity granularity, @NotNull OffsetDateTime reportBegin,
-        @NotNull OffsetDateTime reportEnd) {
+        Usage usage, org.candlepin.subscriptions.db.model.Granularity granularity,
+        @NotNull OffsetDateTime reportBegin, @NotNull OffsetDateTime reportEnd) {
 
         List<SubscriptionCapacity> matches = repository
             .findByOwnerAndProductId(ownerId, productId, sla, usage, reportBegin, reportEnd);

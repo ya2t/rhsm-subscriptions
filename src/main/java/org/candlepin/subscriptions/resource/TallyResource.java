@@ -29,7 +29,6 @@ import org.candlepin.subscriptions.tally.filler.ReportFiller;
 import org.candlepin.subscriptions.tally.filler.ReportFillerFactory;
 import org.candlepin.subscriptions.util.ApplicationClock;
 import org.candlepin.subscriptions.utilization.api.model.Granularity;
-import org.candlepin.subscriptions.utilization.api.model.GranularityApiParam;
 import org.candlepin.subscriptions.utilization.api.model.TallyReport;
 import org.candlepin.subscriptions.utilization.api.model.TallyReportMeta;
 import org.candlepin.subscriptions.utilization.api.model.TallySnapshot;
@@ -70,11 +69,9 @@ public class TallyResource implements TallyApi {
     @ReportingAccessRequired
     @SuppressWarnings("linelength")
     @Override
-    public TallyReport getTallyReport(String productId, @NotNull GranularityApiParam granularity,
+    public TallyReport getTallyReport(String productId, @NotNull Granularity granularity,
         @NotNull OffsetDateTime beginning, @NotNull OffsetDateTime ending, Integer offset,
         @Min(1) Integer limit, String sla, String usage) {
-
-        System.err.println("Starting tally report logic");
 
         // When limit and offset are not specified, we will fill the report with dummy
         // records from beginning to ending dates. Otherwise we page as usual.
@@ -122,7 +119,6 @@ public class TallyResource implements TallyApi {
         // Set the count last since the report may have gotten filled.
         report.getMeta().setCount(report.getData().size());
 
-        System.err.println("about to return");
         return report;
     }
 }

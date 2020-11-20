@@ -98,7 +98,9 @@ public class EnumParamConverterProvider implements ParamConverterProvider {
         }
     }
 
-    public static class CaseInsensitiveEnumParamConverter<T> implements ParamConverter<T> {
+
+    //TODO try extending EnumParamConverter to get rid of duplicate code
+    static class CaseInsensitiveEnumParamConverter<T> implements ParamConverter<T> {
 
         private final Class<T> className;
         private Map<String, T> keyValuePairs = new HashMap<>();
@@ -114,7 +116,6 @@ public class EnumParamConverterProvider implements ParamConverterProvider {
 
         @Override
         public T fromString(String value) {
-
             if (Objects.isNull(value)) {
                 return null;
             }
